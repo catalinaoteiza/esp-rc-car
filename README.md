@@ -15,9 +15,17 @@ You may want to modify your password and SSID to a personal one, and set motor D
 
 src/config.h contains the setup.
 
-## Recommended to compile using VS Code + PlatformIO
+## Build 
 
-## Use PIO > Upload Filesystem Image to upload ./data content to SPIFFS 
+Recommended to compile using VS Code + PlatformIO
+
+## Upload 
+
+Use normmal build & upload from PIO
+In PIO Tab, use PIO > "Upload Filesystem Image" to upload ./data content to SPIFFS 
+
+## Connect
+Use yout phone, connect to wifi "Joystick-x" (x being the chip ID of the ESP), open web navigator of your preference and go to 192.168.4.1 you will see the joystick web interface
 
 ## More info
 
