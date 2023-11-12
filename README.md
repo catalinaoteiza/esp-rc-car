@@ -1,8 +1,8 @@
 # ESP RC Wifi Car web control
 
-Esp web control joystick. 
+NodeMcu ESP8266/ESP32 web control joystick. 
 
-Uses Jostick to control the movement of a robot/rc car. 
+Uses Joystick to control the movement of a robot/rc car. 
 Uses async HTML protocol. 
 
 ## Compatibility
@@ -29,7 +29,7 @@ Use yout phone, connect to wifi "Joystick-x" (x being the chip ID of the ESP), o
 
 ## More info
 
-You can find more detailed info about how it works and hoy to modify it in the following [blog post](https://nkmakes.github.io/2020/09/02/esp32-tank-robot-joystick-http-web-control/), and see it in action in the following [youtube video](https://www.youtube.com/watch?v=uIImwilvI2s).
+You can find more detailed info about how it works and hoy to modify it in the following [blog post](), and see it in action in the following [youtube video]().
 
 
 ## Used Libraries and acknowledgements
