@@ -64,9 +64,8 @@ void setFullSpeedDirFromSigned(int speed_dir_A, int speed_dir_B) {
 }
 
 void setSpeedDirFromSigned(int speed_dir_A, int speed_dir_B) { 
-  
+  //Serial.println("Speed A: " + String(speed_dir_A) + ", Speed B: " + String(speed_dir_B));
   if (speed_dir_A>0){
-    //     myMotors.setSpeedA(speed_dir_A); 
     analogWrite(pwm_A, speed_dir_A); 
     digitalWrite(dir_A, HIGH ); 
   } else if (speed_dir_A<0){
@@ -78,7 +77,6 @@ void setSpeedDirFromSigned(int speed_dir_A, int speed_dir_B) {
   }
 
   if (speed_dir_B>0){
-//     myMotors.setSpeedB(speed_dir_B); 
     analogWrite(pwm_B, speed_dir_B); 
     digitalWrite(dir_B, HIGH); 
   } else if (speed_dir_B<0){
