@@ -44,9 +44,11 @@ You can find more detailed info about how it works and how to modify it in the f
 Uses the following libraries and couldn't be done withouth the following posts
 - [ESPAsyncWebServer](https://github.com/me-no-dev/ESPAsyncWebServer)
 - [TB6612_ESP32](https://github.com/pablopeza/TB6612FNG_ESP32)
-- [jostick JS library from bobbotek](https://github.com/bobboteck/JoyStick)
+- [Joytick JS library from bobbotek](https://github.com/bobboteck/JoyStick)
 - [Differential control](https://www.impulseadventure.com/elec/robot-differential-steering.html)
 - [Async service](https://github.com/neonious/lowjs_esp32_examples/blob/master/neonious_one/cellphone_controlled_rc_car/www/index.html)
 - [web baker](https://gchq.github.io/CyberChef/#recipe=Gzip('Dynamic%20Huffman%20Coding','index.html.gz','',false)To_Hex('0x',0)Split('0x',',0x'))
+- [SMARS](https://www.thingiverse.com/thing:2662828)
+- [SMARS](https://github.com/nkmakes/SMARS-esp32)
 
 Huge thanks to the authors, feel free to donate them!
