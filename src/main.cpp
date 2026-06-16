@@ -39,15 +39,9 @@ AsyncWebServer webserver(80);
 
 int LValue, RValue, commaIndex;
 
-
-
-L298NX2 myMotors(pwm_A, dir_A, pwm_B, dir_B);
-
-
 void setFullSpeedDirFromSigned(int speed_dir_A, int speed_dir_B) { 
   
   if (speed_dir_A>0){
-    //     myMotors.setSpeedA(speed_dir_A); 
     digitalWrite(pwm_A, HIGH); 
     digitalWrite(dir_A, HIGH ); 
   } else if (speed_dir_A<0){
@@ -59,7 +53,6 @@ void setFullSpeedDirFromSigned(int speed_dir_A, int speed_dir_B) {
   }
 
   if (speed_dir_B>0){
-//     myMotors.setSpeedB(speed_dir_B); 
     digitalWrite(pwm_B, HIGH); 
     digitalWrite(dir_B, HIGH); 
   } else if (speed_dir_B<0){
@@ -116,7 +109,7 @@ void setup()
   IPAddress IP = WiFi.softAPIP();
   Serial.println("Wifi Name: " + ssid);
   Serial.println("Password: " + String(password) );
-  Serial.println("AP IP address: ");
+  Serial.print("AP IP address: ");
   Serial.println(IP);
 
   // HTTP handler assignment
@@ -162,8 +155,6 @@ void handle_message(WebsocketsMessage msg) {
   RValue = msg.data().substring(commaIndex + 1).toInt();
   Serial.println("L: "+ String(LValue) + " R: " + String(RValue) );
   setSpeedDirFromSigned(LValue, RValue);
-  //motor1.drive(LValue);
-  //motor2.drive(RValue);
 }
  
 void loop()
