@@ -1,115 +1,110 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <meta name="viewport"
-          content="width=device-width,initial-scale=1.0,user-scalable=no">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no" />
+    <meta charset="utf-8" />
 
-    <meta charset="utf-8">
-
-    <title>Mecanum Robot Control</title>
+    <link rel="stylesheet" type="text/css" href="./style.css">
 
     <script src="./joy.js"></script>
     <script src="./script.js"></script>
 
-    <style>
-
-        html, body{
-            margin:0;
-            padding:0;
-            width:100%;
-            height:100%;
-            overflow:hidden;
-            background:#202020;
-            touch-action:none;
-        }
-
-        #joyLeft{
-            position:fixed;
-            left:20px;
-            bottom:20px;
-            width:220px;
-            height:220px;
-        }
-
-        #joyRight{
-            position:fixed;
-            right:20px;
-            bottom:20px;
-            width:220px;
-            height:220px;
-        }
-
-        #status{
-            position:fixed;
-            top:10px;
-            left:10px;
-            color:white;
-            font-family:monospace;
-            font-size:14px;
-        }
-
-    </style>
-
+    <title>Mecanum Robot Control</title>
 </head>
 
 <body>
 
-    <div id="status">
-        FWD: <span id="fwd">0</span><br>
-        STRAFE: <span id="strafe">0</span><br>
-        ROT: <span id="rot">0</span>
-    </div>
+    <div id="outerContainer">
 
-    <div id="joyLeft"></div>
-    <div id="joyRight"></div>
+        <div id="joyLeft"
+             style="
+             width:200px;
+             height:200px;
+             position:fixed;
+             bottom:20px;
+             left:20px;">
+        </div>
+
+        <div id="joyRight"
+             style="
+             width:200px;
+             height:200px;
+             position:fixed;
+             bottom:20px;
+             right:20px;">
+        </div>
+
+    </div>
 
 <script>
 
-// Stick izquierdo:
-// Y = adelante/atrás
-// X = strafe
+    // =========================
+    // JOYSTICKS
+    // =========================
 
-const joyLeft = new JoyStick(
-    "joyLeft",
+    var JoyLeft = new JoyStick('joyLeft', {});
+
+    var JoyRight = new JoyStick('joyRight', {
+        title: 'joystick2'
+    });
+
+    // =========================
+    // HELPERS
+    // =========================
+
+    function deadzone(value)
     {
-        title:"joyLeft"
+        return Math.abs(value) < 10 ? 0 : value;
     }
-);
 
-// Stick derecho:
-// X = rotación
-
-const joyRight = new JoyStick(
-    "joyRight",
+    function getControlData()
     {
-        title:"joyRight"
+        // Stick izquierdo
+        let leftX  = Number(JoyLeft.GetX());
+        let leftY  = Number(JoyLeft.GetY());
+        
+        // Stick derecho
+        let rightX = Number(JoyRight.GetX());
+        let rightY = Number(JoyRight.GetY());
+
+        let forward = deadzone(-leftY);
+        let strafe  = deadzone(leftX);
+
+        let rotate  = deadzone(rightX);
+        let aux     = deadzone(-rightY);        
+
+        return (
+            forward +
+            "," +
+            strafe +
+            "," +
+            rotate +
+            "," +
+            aux
+        );
     }
-);
 
-const fwdLabel = document.getElementById("fwd");
-const strafeLabel = document.getElementById("strafe");
-const rotLabel = document.getElementById("rot");
+    // =========================
+    // WEBSOCKET TX
+    // =========================
 
-function sendControl()
-{
-    let forward = -parseInt(joyLeft.GetY());
-    let strafe  =  parseInt(joyLeft.GetX());
-    let rotate  =  parseInt(joyRight.GetX());
+    let lastPacket = "";
 
-    fwdLabel.innerText = forward;
-    strafeLabel.innerText = strafe;
-    rotLabel.innerText = rotate;
+    setInterval(() =>
+    {
+        let packet = getControlData();
 
-    send(
-        forward +
-        "," +
-        strafe +
-        "," +
-        rotate
-    );
-}
+        if(packet !== lastPacket)
+        {
+            console.log(packet);
 
-setInterval(sendControl, 50);
+            send(packet);
+
+            lastPacket = packet;
+        }
+
+    }, 50);
 
 </script>
 
