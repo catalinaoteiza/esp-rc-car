@@ -10,28 +10,7 @@
 
 #include <ESPAsyncWebServer.h>
 
-//#include <TB6612_ESP32.h>
-#include <L298NX2.h>
-
 #include "config.h"
-// #include "web.h"
-// #include "SPIFFS.h"
-
-/** ESP32 robot tank with wifi and one joystick web control sketch. 
-    Based on SMARS modular robot project using esp32 and tb6612.
-    https://www.thingiverse.com/thing:2662828
-
-    for complete complete program: https://github.com/nkmakes/SMARS-esp32
-
-    Made by nkmakes.github.io, August 2020.
-
-    -----------------------------------------
-    Camera stream based upon:
-    Based on Neil Kolban example for IDF: https://github.com/nkolban/esp32-snippets/blob/master/cpp_utils/tests/BLE%20Tests/SampleNotify.cpp
-    Ported to Arduino ESP32 by Evandro Copercini
-    Adapted by Manos Zeakis for ESP32 and TB6612FNG
-*/
-
 
 using namespace websockets;
 WebsocketsServer server;
@@ -109,15 +88,6 @@ void setup()
   Serial.println("Password: " + String(password) );
   Serial.print("AP IP address: ");
   Serial.println(IP);
-
-  // HTTP handler assignment
-
-  // webserver.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
-  //   AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html);
-  //   // response->addHeader("Content-Encoding", "gzip");
-  //   response->addHeader("Server","ESP Async Web Server");
-  //   request->send(response);    
-  // });
 
   webserver.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/index.html", "text/html");
