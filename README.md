@@ -17,11 +17,18 @@ src/config.h contains the setup.
 
 ## Build 
 
+### 1 Sketch 
 Recommended to compile using VS Code + PlatformIO
+
+### 2 Server Files 
+In PIO Tab, use PIO > "Build Filesystem Image" to build ./data  
 
 ## Upload 
 
+### 1 Sketch 
 Use normmal build & upload from PIO
+
+### 2 Server Files 
 In PIO Tab, use PIO > "Upload Filesystem Image" to upload ./data content to SPIFFS 
 
 ## Connect
@@ -29,7 +36,7 @@ Use yout phone, connect to wifi "Joystick-x" (x being the chip ID of the ESP), o
 
 ## More info
 
-You can find more detailed info about how it works and hoy to modify it in the following [blog post](), and see it in action in the following [youtube video]().
+You can find more detailed info about how it works and how to modify it in the following [blog post](), and see it in action in the following [youtube video]().
 
 
 ## Used Libraries and acknowledgements
