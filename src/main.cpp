@@ -102,8 +102,9 @@ void setup()
 
 
   // Create a unique wifi ssid
-  String chipId = String( ESP.getChipId());
-  String ssid = ssid_base + chipId;
+  String chipHex = String(ESP.getChipId(), HEX);
+  chipHex.toUpperCase();
+  String ssid = String(ssid_base) + chipHex;
 
   // Create AP
   WiFi.softAP(ssid, password);
