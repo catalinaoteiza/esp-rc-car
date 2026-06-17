@@ -10,6 +10,7 @@
 #endif
 
 #include <ESPAsyncWebServer.h>
+#include <LittleFS.h>
 
 #include "config.h"
 
@@ -84,11 +85,11 @@ void setup()
   Serial.println("");
 
   ESP.wdtEnable(5000);
-  // Mount 
-  if (!SPIFFS.begin())
+  // Mount FS
+  if (!LittleFS.begin())
   {
-    Serial.println("An Error has occurred while mounting SPIFFS");
-    return;
+      Serial.println("LittleFS mount failed");
+      return;
   }
 
   pinMode(pwm_FL, OUTPUT);
@@ -153,19 +154,19 @@ void setup()
   Serial.println(ssid);
 
   webserver.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/index.html", "text/html");
+    request->send(LittleFS, "/index.html", "text/html");
   });
 
   webserver.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/style.css", "text/css");
+    request->send(LittleFS, "/style.css", "text/css");
   });
 
   webserver.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/script.js", "text/javascript");
+    request->send(LittleFS, "/script.js", "text/javascript");
   });  
 
   webserver.on("/joy.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(SPIFFS, "/joy.js", "text/javascript");
+    request->send(LittleFS, "/joy.js", "text/javascript");
   });  
 
 
