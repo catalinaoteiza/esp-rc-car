@@ -92,6 +92,15 @@ void setup()
       return;
   }
 
+  FSInfo fs_info;
+  LittleFS.info(fs_info);
+
+  Serial.printf(
+      "LittleFS: %u / %u bytes\n",
+      fs_info.usedBytes,
+      fs_info.totalBytes
+  );  
+
   pinMode(pwm_FL, OUTPUT);
   pinMode(dir_FL, OUTPUT);
 
@@ -153,22 +162,11 @@ void setup()
   Serial.print("OTA Hostname: ");
   Serial.println(ssid);
 
+  // Serve all files from root
+  webserver.serveStatic("/", LittleFS, "/");
   webserver.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(LittleFS, "/index.html", "text/html");
-  });
-
-  webserver.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(LittleFS, "/style.css", "text/css");
-  });
-
-  webserver.on("/script.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(LittleFS, "/script.js", "text/javascript");
+      request->send(LittleFS, "/index.html", "text/html");
   });  
-
-  webserver.on("/joy.js", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send(LittleFS, "/joy.js", "text/javascript");
-  });  
-
 
   // start server
   webserver.begin();
