@@ -16,7 +16,10 @@ using namespace websockets;
 WebsocketsServer server;
 AsyncWebServer webserver(80);
 
-int LValue, RValue, commaIndex;
+int forward;
+int strafe;
+int rotate;
+int aux;
 
 void setFullSpeedDirFromSigned(int speed_dir_A, int speed_dir_B) { 
   
@@ -118,11 +121,24 @@ void setup()
  
 // handle http messages
 void handle_message(WebsocketsMessage msg) {
-  commaIndex = msg.data().indexOf(',');
-  LValue = msg.data().substring(0, commaIndex).toInt();
-  RValue = msg.data().substring(commaIndex + 1).toInt();
-  Serial.println("L: "+ String(LValue) + " R: " + String(RValue) );
-  setSpeedDirFromSigned(LValue, RValue);
+    String data = msg.data();
+
+    int p1 = data.indexOf(',');
+    int p2 = data.indexOf(',', p1 + 1);
+    int p3 = data.indexOf(',', p2 + 1);
+
+    forward = data.substring(0, p1).toInt();
+    strafe  = data.substring(p1 + 1, p2).toInt();
+    rotate  = data.substring(p2 + 1, p3).toInt();
+    aux     = data.substring(p3 + 1).toInt();
+
+    Serial.printf(
+        "F:%d S:%d R:%d A:%d\n",
+        forward,
+        strafe,
+        rotate,
+        aux
+    );
 }
  
 void loop()
