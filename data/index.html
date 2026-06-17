@@ -16,6 +16,10 @@
 <body>
     <div id="topBar">
 
+        <button id="stopBtn">
+            STOP
+        </button>
+
         <div id="status">
             DISCONNECTED
         </div>
@@ -176,6 +180,14 @@ ws.onclose = () =>
 {
     document.getElementById("status")
         .textContent = "DISCONNECTED";
+};
+
+document
+.getElementById("stopBtn")
+.onclick = () =>
+{
+    send("0,0,0,90");
+    enabled = false;
 };
 
 </script>
