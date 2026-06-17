@@ -121,3 +121,60 @@ body
 {
     right: 20px;
 }
+
+
+#servoLeftTrack
+{
+    width: 140px;
+    height: 20px;
+
+    background: #444;
+    border-radius: 10px;
+
+    position: relative;
+
+    touch-action: none;
+}
+
+#servoLeftKnob
+{
+    width: 24px;
+    height: 24px;
+
+    border-radius: 50%;
+    background: #00c853;
+
+    position: absolute;
+    left: calc(50% - 12px);
+    top: -2px;
+
+    touch-action: none;
+}
+
+#servoRightTrack
+{
+    width: 140px;
+    height: 20px;
+
+    background: #444;
+    border-radius: 10px;
+
+    position: relative;
+
+    touch-action: none;
+}
+
+#servoRightKnob
+{
+    width: 24px;
+    height: 24px;
+
+    border-radius: 50%;
+    background: #00c853;
+
+    position: absolute;
+    left: calc(50% - 12px);
+    top: -2px;
+
+    touch-action: none;
+}

@@ -36,13 +36,10 @@
 
             <label>Servo Izq</label>
 
-            <input
-                class="servoSlider"
-                type="range"
-                id="servoLeft"
-                min="0"
-                max="180"
-                value="90">
+
+            <div id="servoLeftTrack">
+                <div id="servoLeftKnob"></div>
+            </div>
 
             <span id="servoLeftValue">90°</span>
 
@@ -52,13 +49,9 @@
 
             <label>Servo Der</label>
 
-            <input
-                class="servoSlider"
-                type="range"
-                id="servoRight"
-                min="0"
-                max="180"
-                value="90">
+            <div id="servoRightTrack">
+                <div id="servoRightKnob"></div>
+            </div>
 
             <span id="servoRightValue">90°</span>
 
@@ -188,31 +181,6 @@ document
         : "ENABLED: OFF";
 };
 
-let servoLeftPos = 90;
-let servoRightPos = 90;
-
-const sliderLeft =
-    document.getElementById("servoLeft");
-
-const sliderRight =
-    document.getElementById("servoRight");
-
-sliderLeft.oninput = () =>
-{
-    servoLeftPos = Number(sliderLeft.value);
-
-    document.getElementById("servoLeftValue")
-        .textContent = servoLeftPos + "°";
-};
-
-sliderRight.oninput = () =>
-{
-    servoRightPos = Number(sliderRight.value);
-
-    document.getElementById("servoRightValue")
-        .textContent = servoRightPos + "°";
-};
-
 ws.onopen = () =>
 {
     document.getElementById("status")
@@ -232,6 +200,157 @@ document
     send("0,0,0,90");
     enabled = false;
 };
+
+</script>
+
+<script>
+const servoLeftTrack =
+    document.getElementById("servoLeftTrack");
+
+const servoLeftKnob =
+    document.getElementById("servoLeftKnob");
+
+const servoRightTrack =
+    document.getElementById("servoRightTrack");
+
+const servoRightKnob =
+    document.getElementById("servoRightKnob");
+
+let servoLeftPos = 90;
+let servoLeftTouchId = null;
+
+let servoRightPos = 90;
+let servoRightTouchId = null;
+
+function updateServoLeft(clientX)
+{
+    const rect =
+        servoLeftTrack.getBoundingClientRect();
+
+    let x = clientX - rect.left;
+
+    x = Math.max(0, Math.min(rect.width, x));
+
+    servoLeftKnob.style.left =
+        (x - 12) + "px";
+
+    servoLeftPos = Math.round(
+        (x / rect.width) * 180
+    );
+
+    document.getElementById("servoLeftValue")
+        .textContent = servoLeftPos + "°";
+}
+
+function updateServoRight(clientX)
+{
+    const rect =
+        servoRightTrack.getBoundingClientRect();
+
+    let x = clientX - rect.left;
+
+    x = Math.max(0, Math.min(rect.width, x));
+
+    servoRightKnob.style.left =
+        (x - 12) + "px";
+
+    servoRightPos = Math.round(
+        (x / rect.width) * 180
+    );
+
+    document.getElementById("servoRightValue")
+        .textContent = servoRightPos + "°";
+}
+
+
+
+servoLeftTrack.addEventListener(
+    "touchstart",
+    (e) =>
+    {
+        const touch = e.changedTouches[0];
+
+        servoLeftTouchId = touch.identifier;
+
+        updateServoLeft(touch.clientX);
+    },
+    { passive: false }
+);
+
+servoLeftTrack.addEventListener(
+    "touchmove",
+    (e) =>
+    {
+        for(const touch of e.changedTouches)
+        {
+            if(touch.identifier === servoLeftTouchId)
+            {
+                updateServoLeft(touch.clientX);
+                break;
+            }
+        }
+    },
+    { passive: false }
+);
+
+servoLeftTrack.addEventListener(
+    "touchend",
+    (e) =>
+    {
+        for(const touch of e.changedTouches)
+        {
+            if(touch.identifier === servoLeftTouchId)
+            {
+                servoLeftTouchId = null;
+                break;
+            }
+        }
+    }
+);
+
+servoRightTrack.addEventListener(
+    "touchstart",
+    (e) =>
+    {
+        const touch = e.changedTouches[0];
+
+        servoRightTouchId = touch.identifier;
+
+        updateServoRight(touch.clientX);
+    },
+    { passive: false }
+);
+
+servoRightTrack.addEventListener(
+    "touchmove",
+    (e) =>
+    {
+        for(const touch of e.changedTouches)
+        {
+            if(touch.identifier === servoRightTouchId)
+            {
+                updateServoRight(touch.clientX);
+                break;
+            }
+        }
+    },
+    { passive: false }
+);
+
+servoRightTrack.addEventListener(
+    "touchend",
+    (e) =>
+    {
+        for(const touch of e.changedTouches)
+        {
+            if(touch.identifier === servoRightTouchId)
+            {
+                servoRightTouchId = null;
+                break;
+            }
+        }
+    }
+);
 
 </script>
 
