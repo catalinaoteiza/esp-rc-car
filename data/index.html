@@ -111,6 +111,8 @@
             strafe = 0;
             rotate = 0;
             aux = 0; 
+
+            return "0,0,0,90,90";
         }
 
         return (
@@ -197,8 +199,12 @@ document
 .getElementById("stopBtn")
 .onclick = () =>
 {
-    send("0,0,0,90");
     enabled = false;
+
+    servoLeftPos = 90;
+    servoRightPos = 90;
+
+    send("0,0,0,90,90");
 };
 
 </script>
@@ -215,6 +221,12 @@ const servoRightTrack =
 
 const servoRightKnob =
     document.getElementById("servoRightKnob");
+
+const servoLeftValue =
+    document.getElementById("servoLeftValue");
+
+const servoRightValue =
+    document.getElementById("servoRightValue");
 
 let servoLeftPos = 90;
 let servoLeftTouchId = null;
@@ -238,8 +250,8 @@ function updateServoLeft(clientX)
         (x / rect.width) * 180
     );
 
-    document.getElementById("servoLeftValue")
-        .textContent = servoLeftPos + "°";
+    servoLeftValue.textContent =
+        servoLeftPos + "°";
 }
 
 function updateServoRight(clientX)
@@ -258,8 +270,8 @@ function updateServoRight(clientX)
         (x / rect.width) * 180
     );
 
-    document.getElementById("servoRightValue")
-        .textContent = servoRightPos + "°";
+    servoRightValue.textContent =
+        servoRightPos + "°";
 }
 
 
@@ -350,6 +362,16 @@ servoRightTrack.addEventListener(
             }
         }
     }
+);
+
+updateServoLeft(
+    servoLeftTrack.getBoundingClientRect().left +
+    servoLeftTrack.getBoundingClientRect().width / 2
+);
+
+updateServoRight(
+    servoRightTrack.getBoundingClientRect().left +
+    servoRightTrack.getBoundingClientRect().width / 2
 );
 
 </script>
