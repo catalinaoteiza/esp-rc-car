@@ -17,23 +17,9 @@
 
     <div id="outerContainer">
 
-        <div id="joyLeft"
-             style="
-             width:200px;
-             height:200px;
-             position:fixed;
-             bottom:20px;
-             left:20px;">
-        </div>
+        <div id="joyLeft"></div>
 
-        <div id="joyRight"
-             style="
-             width:200px;
-             height:200px;
-             position:fixed;
-             bottom:20px;
-             right:20px;">
-        </div>
+        <div id="joyRight"></div>
 
     </div>
 
@@ -107,6 +93,17 @@
     }, 50);
 
 </script>
+
+<script>
+document.addEventListener(
+    "touchmove",
+    function(e) {
+        e.preventDefault();
+    },
+    { passive: false }
+);
+</script>
+
 
 </body>
 </html>

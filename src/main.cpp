@@ -21,52 +21,60 @@ int strafe;
 int rotate;
 int aux;
 
-void setFullSpeedDirFromSigned(int speed_dir_A, int speed_dir_B) { 
-  
-  if (speed_dir_A>0){
-    digitalWrite(pwm_A, HIGH); 
-    digitalWrite(dir_A, HIGH ); 
-  } else if (speed_dir_A<0){
-    digitalWrite(pwm_A, HIGH); 
-    digitalWrite(dir_A, LOW); 
-  }
-  else{
-    digitalWrite(pwm_A, LOW); 
-  }
+int motorFL;
+int motorFR;
+int motorRL;
+int motorRR;
 
-  if (speed_dir_B>0){
-    digitalWrite(pwm_B, HIGH); 
-    digitalWrite(dir_B, HIGH); 
-  } else if (speed_dir_B<0){
-    digitalWrite(pwm_B, HIGH); 
-    digitalWrite(dir_B, LOW); 
-  } else{
-    digitalWrite(pwm_B, LOW); 
-  }
+void setMotor(int pwmPin, int dirPin, int value)
+{
+    value = constrain(value, -255, 255);
+
+    if (value > 0)
+    {
+        analogWrite(pwmPin, value);
+        digitalWrite(dirPin, HIGH);
+    }
+    else if (value < 0)
+    {
+        analogWrite(pwmPin, abs(value));
+        digitalWrite(dirPin, LOW);
+    }
+    else
+    {
+        analogWrite(pwmPin, 0);
+    }
 }
 
-void setSpeedDirFromSigned(int speed_dir_A, int speed_dir_B) { 
-  //Serial.println("Speed A: " + String(speed_dir_A) + ", Speed B: " + String(speed_dir_B));
-  if (speed_dir_A>0){
-    analogWrite(pwm_A, speed_dir_A); 
-    digitalWrite(dir_A, HIGH ); 
-  } else if (speed_dir_A<0){
-    analogWrite(pwm_A, abs(speed_dir_A)); 
-    digitalWrite(dir_A, LOW); 
-  }
-  else{
-    digitalWrite(pwm_A, LOW); 
-  }
+void driveMecanum(int forward, int strafe, int rotate)
+{
+    motorFL = forward + strafe + rotate;
+    motorFR = forward - strafe - rotate;
+    motorRL = forward - strafe + rotate;
+    motorRR = forward + strafe - rotate;
 
-  if (speed_dir_B>0){
-    analogWrite(pwm_B, speed_dir_B); 
-    digitalWrite(dir_B, HIGH); 
-  } else if (speed_dir_B<0){
-    analogWrite(pwm_B, abs (speed_dir_B)); 
-    digitalWrite(dir_B, LOW); 
-  } else{
-    digitalWrite(pwm_B, LOW); 
-  }
+    int maxValue = max(
+        max(abs(motorFL), abs(motorFR)),
+        max(abs(motorRL), abs(motorRR))
+    );
+
+    if (maxValue > 100)
+    {
+        motorFL = motorFL * 100 / maxValue;
+        motorFR = motorFR * 100 / maxValue;
+        motorRL = motorRL * 100 / maxValue;
+        motorRR = motorRR * 100 / maxValue;
+    }
+
+    motorFL = map(motorFL, -100, 100, -255, 255);
+    motorFR = map(motorFR, -100, 100, -255, 255);
+    motorRL = map(motorRL, -100, 100, -255, 255);
+    motorRR = map(motorRR, -100, 100, -255, 255);
+
+    setMotor(pwm_FL, dir_FL, motorFL);
+    setMotor(pwm_FR, dir_FR, motorFR);
+    setMotor(pwm_RL, dir_RL, motorRL);
+    setMotor(pwm_RR, dir_RR, motorRR);
 }
 
 void setup()
@@ -79,6 +87,19 @@ void setup()
     Serial.println("An Error has occurred while mounting SPIFFS");
     return;
   }
+
+  pinMode(pwm_FL, OUTPUT);
+  pinMode(dir_FL, OUTPUT);
+
+  pinMode(pwm_FR, OUTPUT);
+  pinMode(dir_FR, OUTPUT);
+
+  pinMode(pwm_RL, OUTPUT);
+  pinMode(dir_RL, OUTPUT);
+
+  pinMode(pwm_RR, OUTPUT);
+  pinMode(dir_RR, OUTPUT);
+
 
   // Create a unique wifi ssid
   String chipId = String( ESP.getChipId());
@@ -120,7 +141,8 @@ void setup()
 }
  
 // handle http messages
-void handle_message(WebsocketsMessage msg) {
+void handle_message(WebsocketsMessage msg)
+{
     String data = msg.data();
 
     int p1 = data.indexOf(',');
@@ -132,12 +154,17 @@ void handle_message(WebsocketsMessage msg) {
     rotate  = data.substring(p2 + 1, p3).toInt();
     aux     = data.substring(p3 + 1).toInt();
 
+    driveMecanum(forward, strafe, rotate);
+
     Serial.printf(
-        "F:%d S:%d R:%d A:%d\n",
+        "F:%d S:%d R:%d | FL:%d FR:%d RL:%d RR:%d\n",
         forward,
         strafe,
         rotate,
-        aux
+        motorFL,
+        motorFR,
+        motorRL,
+        motorRR
     );
 }
  
