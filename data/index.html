@@ -30,16 +30,39 @@
 
     </div>
     
-    <div id="servoContainer">
+    <div id="servoRow">
 
-        <span id="servoValue">90°</span>
+        <div class="servoContainer">
 
-        <input
-            type="range"
-            id="servoSlider"
-            min="0"
-            max="180"
-            value="90">
+            <label>Servo Izq</label>
+
+            <input
+                class="servoSlider"
+                type="range"
+                id="servoLeft"
+                min="0"
+                max="180"
+                value="90">
+
+            <span id="servoLeftValue">90°</span>
+
+        </div>
+
+        <div class="servoContainer">
+
+            <label>Servo Der</label>
+
+            <input
+                class="servoSlider"
+                type="range"
+                id="servoRight"
+                min="0"
+                max="180"
+                value="90">
+
+            <span id="servoRightValue">90°</span>
+
+        </div>
 
     </div>
 
@@ -94,8 +117,7 @@
             forward = 0;
             strafe = 0;
             rotate = 0;
-            aux = 0;
-            servoPos = 0;  
+            aux = 0; 
         }
 
         return (
@@ -105,7 +127,9 @@
             "," +
             rotate +
             "," +
-            servoPos
+            servoLeftPos +
+            "," +
+            servoRightPos
         );
     }
 
@@ -135,8 +159,15 @@
 <script>
 document.addEventListener(
     "touchmove",
-    function(e) {
-        e.preventDefault();
+    function(e)
+    {
+        if (
+            e.target.closest("#joyLeft") ||
+            e.target.closest("#joyRight")
+        )
+        {
+            e.preventDefault();
+        }
     },
     { passive: false }
 );
@@ -157,17 +188,29 @@ document
         : "ENABLED: OFF";
 };
 
-let servoPos = 90;
+let servoLeftPos = 90;
+let servoRightPos = 90;
 
-const slider =
-    document.getElementById("servoSlider");
+const sliderLeft =
+    document.getElementById("servoLeft");
 
-slider.oninput = () =>
+const sliderRight =
+    document.getElementById("servoRight");
+
+sliderLeft.oninput = () =>
 {
-    servoPos = slider.value;
+    servoLeftPos = Number(sliderLeft.value);
 
-    document.getElementById("servoValue")
-        .textContent = servoPos + "°";
+    document.getElementById("servoLeftValue")
+        .textContent = servoLeftPos + "°";
+};
+
+sliderRight.oninput = () =>
+{
+    servoRightPos = Number(sliderRight.value);
+
+    document.getElementById("servoRightValue")
+        .textContent = servoRightPos + "°";
 };
 
 ws.onopen = () =>

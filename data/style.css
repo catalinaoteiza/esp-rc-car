@@ -1,39 +1,123 @@
-* {
-    box-sizing: border-box;
+body
+{
+    margin: 0;
+    background: #111;
+    color: white;
+    font-family: Arial, sans-serif;
 }
 
-html,
-body {
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    touch-action: none;
-    overscroll-behavior: none;
+#topBar
+{
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+
+    z-index: 1000;
+}
+
+#stopBtn,
+#enableBtn,
+#status
+{
+    height: 50px;
+    min-width: 110px;
+
+    border-radius: 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#stopBtn
+{
+    background: #b71c1c;
+    color: white;
+    border: none;
+}
+
+#enableBtn
+{
+    background: #1565c0;
+    color: white;
+    border: none;
+}
+
+#status
+{
+    background: #333;
+}
+
+#servoRow
+{
+    position: fixed;
+
+    top: 75px;
+    left: 10px;
+    right: 10px;
+
+    display: flex;
+    justify-content: space-between;
+
+    gap: 15px;
+
+    z-index: 1000;
+}
+
+.servoContainer
+{
+    width: 42vw;
+    max-width: 240px;
+
+    background: #222;
+
+    padding: 10px;
+
+    border-radius: 12px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.servoSlider
+{
+    touch-action: manipulation;
+    pointer-events: auto;
 }
 
 #joyLeft,
-#joyRight {
-    touch-action: none;
-
+#joyRight
+{
     position: fixed;
-    bottom: 3vh;
 
-    width: 32vw;
-    height: 32vw;
+    bottom: 20px;
 
-    max-width: 180px;
-    max-height: 180px;
+    width: 34vw;
+    height: 34vw;
 
-    min-width: 110px;
-    min-height: 110px;
+    max-width: 200px;
+    max-height: 200px;
+
+    min-width: 120px;
+    min-height: 120px;
+
+    touch-action: none;
 
     z-index: 100;
 }
 
-#joyLeft {
-    left: 2vw;
+#joyLeft
+{
+    left: 20px;
 }
 
-#joyRight {
-    right: 2vw;
+#joyRight
+{
+    right: 20px;
 }
