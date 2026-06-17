@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "Arduino.h"
 #include <ArduinoWebsockets.h>
+#include <ArduinoOTA.h>
 
 #if defined(ESP32)
   #include <WiFi.h>
@@ -81,6 +82,8 @@ void setup()
 {
   Serial.begin(115200);
   Serial.println("");
+
+  ESP.wdtEnable(5000);
   // Mount 
   if (!SPIFFS.begin())
   {
@@ -113,6 +116,41 @@ void setup()
   Serial.println("Password: " + String(password) );
   Serial.print("AP IP address: ");
   Serial.println(IP);
+
+  ArduinoOTA.setHostname(ssid.c_str());
+
+  ArduinoOTA.onStart([]() {
+      Serial.println("OTA Start");
+  });
+
+  ArduinoOTA.onEnd([]() {
+      Serial.println("\nOTA End");
+  });
+
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+      Serial.printf(
+          "OTA Progress: %u%%\r",
+          (progress * 100) / total
+      );
+  });
+
+  ArduinoOTA.onError([](ota_error_t error) {
+      Serial.printf(
+          "OTA Error[%u]\n",
+          error
+      );
+  });
+
+  ArduinoOTA.begin();
+
+  Serial.print("Free heap: ");
+  Serial.println(ESP.getFreeHeap());
+
+  Serial.println("OTA Ready");  
+  Serial.print("OTA IP: ");
+  Serial.println(WiFi.softAPIP());
+  Serial.print("OTA Hostname: ");
+  Serial.println(ssid);
 
   webserver.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(SPIFFS, "/index.html", "text/html");
@@ -169,13 +207,31 @@ void handle_message(WebsocketsMessage msg)
     );
 }
  
+
+
+WebsocketsClient client;
+
 void loop()
 {
-  auto client = server.accept();
-  client.onMessage(handle_message);
-  while (client.available()) {
-    client.poll();
-  }
+    ArduinoOTA.handle();
+
+    if (!client.available())
+    {
+        client = server.accept();
+
+        if (client.available())
+        {
+            client.onMessage(handle_message);
+            Serial.println("WS client connected");
+        }
+    }
+
+    if (client.available())
+    {
+        client.poll();
+    }
+
+    yield();
 }
 
 
