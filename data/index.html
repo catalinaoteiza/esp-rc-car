@@ -16,12 +16,28 @@
 <body>
     <div id="topBar">
 
+        <div id="status">
+            DISCONNECTED
+        </div>
+
         <button id="enableBtn">
             ENABLED: OFF
         </button>
 
     </div>
     
+    <div id="servoContainer">
+
+        <span id="servoValue">90°</span>
+
+        <input
+            type="range"
+            id="servoSlider"
+            min="0"
+            max="180"
+            value="90">
+
+    </div>
 
     <div id="outerContainer">
 
@@ -74,7 +90,8 @@
             forward = 0;
             strafe = 0;
             rotate = 0;
-            aux = 0; 
+            aux = 0;
+            servoPos = 0;  
         }
 
         return (
@@ -84,7 +101,7 @@
             "," +
             rotate +
             "," +
-            aux
+            servoPos
         );
     }
 
@@ -134,6 +151,31 @@ document
         enabled
         ? "ENABLED: ON"
         : "ENABLED: OFF";
+};
+
+let servoPos = 90;
+
+const slider =
+    document.getElementById("servoSlider");
+
+slider.oninput = () =>
+{
+    servoPos = slider.value;
+
+    document.getElementById("servoValue")
+        .textContent = servoPos + "°";
+};
+
+ws.onopen = () =>
+{
+    document.getElementById("status")
+        .textContent = "CONNECTED";
+};
+
+ws.onclose = () =>
+{
+    document.getElementById("status")
+        .textContent = "DISCONNECTED";
 };
 
 </script>
