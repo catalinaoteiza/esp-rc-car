@@ -1,4 +1,4 @@
-const char* ssid_base = "Joystick-"; //Enter SSID
+const char* ssid_base = "ROV-"; //Enter SSID
 const char* password = "1234567890"; //Enter Password
 
 /* Pin definitions */ 
