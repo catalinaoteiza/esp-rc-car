@@ -127,11 +127,11 @@
             rightY = 0;
         }
 
-        let forward = deadzone(-leftY);
+        let forward = deadzone(leftY);
         let strafe  = deadzone(leftX);
 
-        let rotate  = deadzone(rightX);
-        let aux     = deadzone(-rightY);        
+        let rotate  = deadzone(-rightX);
+        let aux     = deadzone(rightY);        
 
         if(invertForward) forward = -forward;
         if(invertStrafe)  strafe  = -strafe;
