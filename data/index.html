@@ -147,6 +147,9 @@
             return "0,0,0,90,90";
         }
 
+        if (isNaN(servoLeftPos))  servoLeftPos = 90;
+        if (isNaN(servoRightPos)) servoRightPos = 90;
+
         return (
             forward +
             "," +
