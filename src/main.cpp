@@ -28,10 +28,13 @@ int motorFR;
 int motorRL;
 int motorRR;
 
-const bool invertFL = false;
+const bool invertFL = true;
 const bool invertFR = false;
 const bool invertRL = false;
 const bool invertRR = false;
+
+bool motorTestMode = true;
+
 
 void setMotor(int pwmPin, int dirPin, int value)
 {
@@ -51,6 +54,56 @@ void setMotor(int pwmPin, int dirPin, int value)
     {
         analogWrite(pwmPin, 0);
     }
+}
+
+
+void setMotorTA6586(
+    int pinA,
+    int pinB,
+    int value
+)
+{
+    value = constrain(value, -255, 255);
+
+    if(value > 0)
+    {
+        analogWrite(pinA, value);
+        analogWrite(pinB, 0);
+    }
+    else if(value < 0)
+    {
+        analogWrite(pinA, 0);
+        analogWrite(pinB, -value);
+    }
+    else
+    {
+        analogWrite(pinA, 0);
+        analogWrite(pinB, 0);
+    }
+}
+
+void setFL(int v)
+{
+    if (invertFL) v = -v;
+    setMotor(pwm_FL, dir_FL, v);
+}
+
+void setFR(int v)
+{
+    if (invertFR) v = -v;
+    setMotor(pwm_FR, dir_FR, v);
+}
+
+void setRL(int v)
+{
+    if (invertRL) v = -v;
+    setMotorTA6586(pwm_RL, dir_RL, v);
+}
+
+void setRR(int v)
+{
+    if (invertRR) v = -v;
+    setMotorTA6586(pwm_RR, dir_RR, v);
 }
 
 void driveMecanum(int forward, int strafe, int rotate)
@@ -83,11 +136,10 @@ void driveMecanum(int forward, int strafe, int rotate)
     if(invertRL) motorRL = -motorRL;
     if(invertRR) motorRR = -motorRR;
 
-
-    setMotor(pwm_FL, dir_FL, motorFL);
-    setMotor(pwm_FR, dir_FR, motorFR);
-    setMotor(pwm_RL, dir_RL, motorRL);
-    setMotor(pwm_RR, dir_RR, motorRR);
+    setFL(motorFL);
+    setFR(motorFR);
+    setRL(motorRL);
+    setRR(motorRR);
 
     Serial.printf(
         "FL[pwm=%d dir=%d]=%4d  "
@@ -101,6 +153,67 @@ void driveMecanum(int forward, int strafe, int rotate)
         pwm_RR, dir_RR, motorRR
     );
 }
+
+void stopAll()
+{
+    setFL(0);
+    setFR(0);
+    setRL(0);
+    setRR(0);
+}
+
+// ====== TEST POR MOTOR ======
+void testMotors()
+{
+    Serial.println("\n===== MOTOR TEST START =====");
+
+    // FL
+    Serial.println("FL F");
+    setMotor(pwm_FL, dir_FL, 180);
+    delay(2000); 
+    Serial.println("FL B");
+    setMotor(pwm_FL, dir_FL, -180);
+    delay(2000);
+    setMotor(pwm_FL, dir_FL, 0);
+    delay(2000);
+
+    // FR
+    Serial.println("FR F");
+    setMotor(pwm_FR, dir_FR, 180);
+    delay(2000);
+    Serial.println("FR B");
+    setMotor(pwm_FR, dir_FR, -180);
+    delay(2000);
+    setMotor(pwm_FR, dir_FR, 0);
+    delay(2000);
+
+    // RL (TA6586 pero usando variables reales)
+    Serial.println("RL F");
+    setMotorTA6586(pwm_RL, dir_RL, 180);
+    delay(2000);
+    Serial.println("RL B");
+    setMotorTA6586(pwm_RL, dir_RL, -180);
+    delay(2000);
+    setMotorTA6586(pwm_RL, dir_RL, 0);
+    delay(2000);
+
+    // RR
+    Serial.println("RR F");
+    setMotorTA6586(pwm_RR, dir_RR, 180);
+    delay(2000);
+    Serial.println("RR B");
+    setMotorTA6586(pwm_RR, dir_RR, -180);
+    delay(2000);
+    setMotorTA6586(pwm_RR, dir_RR, 0);
+    delay(2000);
+
+    stopAll();
+
+    Serial.println("===== MOTOR TEST END =====\n");
+}
+
+
+
 
 void setup()
 {
@@ -198,6 +311,12 @@ void setup()
   // Verbose
   Serial.print("Server status: ");
   Serial.println(server.available());
+
+  if (motorTestMode)
+  {
+    delay(2000);   // tiempo para abrir serial monitor
+    testMotors();
+  }
  
 }
  

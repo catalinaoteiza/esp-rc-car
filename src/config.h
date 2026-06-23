@@ -16,5 +16,5 @@ const int dir_RL = D6;
 
 // Rear Right
 const int pwm_RR = D7;
-const int dir_RR = D0;
+const int dir_RR = D8;
  
