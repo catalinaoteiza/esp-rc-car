@@ -28,6 +28,11 @@ int motorFR;
 int motorRL;
 int motorRR;
 
+const bool invertFL = false;
+const bool invertFR = false;
+const bool invertRL = false;
+const bool invertRR = false;
+
 void setMotor(int pwmPin, int dirPin, int value)
 {
     value = constrain(value, -255, 255);
@@ -73,10 +78,28 @@ void driveMecanum(int forward, int strafe, int rotate)
     motorRL = map(motorRL, -100, 100, -255, 255);
     motorRR = map(motorRR, -100, 100, -255, 255);
 
+    if(invertFL) motorFL = -motorFL;
+    if(invertFR) motorFR = -motorFR;
+    if(invertRL) motorRL = -motorRL;
+    if(invertRR) motorRR = -motorRR;
+
+
     setMotor(pwm_FL, dir_FL, motorFL);
     setMotor(pwm_FR, dir_FR, motorFR);
     setMotor(pwm_RL, dir_RL, motorRL);
     setMotor(pwm_RR, dir_RR, motorRR);
+
+    Serial.printf(
+        "FL[pwm=%d dir=%d]=%4d  "
+        "FR[pwm=%d dir=%d]=%4d  "
+        "RL[pwm=%d dir=%d]=%4d  "
+        "RR[pwm=%d dir=%d]=%4d\n",
+
+        pwm_FL, dir_FL, motorFL,
+        pwm_FR, dir_FR, motorFR,
+        pwm_RL, dir_RL, motorRL,
+        pwm_RR, dir_RR, motorRR
+    );
 }
 
 void setup()
