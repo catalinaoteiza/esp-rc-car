@@ -35,6 +35,9 @@ const bool invertRR = true;
 
 bool motorTestMode = true;
 
+int servoLeft;
+int servoRight;
+
 
 void setMotor(int pwmPin, int dirPin, int value)
 {
@@ -291,19 +294,23 @@ void handle_message(WebsocketsMessage msg)
     int p1 = data.indexOf(',');
     int p2 = data.indexOf(',', p1 + 1);
     int p3 = data.indexOf(',', p2 + 1);
+    int p4 = data.indexOf(',', p3 + 1);
 
     forward = data.substring(0, p1).toInt();
     strafe  = data.substring(p1 + 1, p2).toInt();
     rotate  = data.substring(p2 + 1, p3).toInt();
-    aux     = data.substring(p3 + 1).toInt();
+    servoLeft = data.substring(p3 + 1, p4).toInt();
+    servoRight= data.substring(p4 + 1).toInt();
 
     driveMecanum(forward, strafe, rotate);
 
     Serial.printf(
-        "F:%d S:%d R:%d | FL:%d FR:%d RL:%d RR:%d\n",
+        "F:%d S:%d R:%d SL:%d SR:%d | FL:%d FR:%d RL:%d RR:%d\n",
         forward,
         strafe,
         rotate,
+        servoLeft,
+        servoRight,
         motorFL,
         motorFR,
         motorRL,
