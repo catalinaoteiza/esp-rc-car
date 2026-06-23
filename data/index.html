@@ -28,6 +28,9 @@
             ENABLED: OFF
         </button>
 
+        <button id="configBtn">⚙️</button>
+
+
     </div>
     
     <div id="servoRow">
@@ -83,6 +86,10 @@
     // HELPERS
     // =========================
 
+    let invertForward = false;
+    let invertStrafe  = false;
+    let invertRotate  = false;
+
     function deadzone(value)
     {
         return Math.abs(value) < 10 ? 0 : value;
@@ -98,12 +105,37 @@
         let rightX = Number(JoyRight.GetX());
         let rightY = Number(JoyRight.GetY());
 
+        // Asistencia direccional
+
+        if (Math.abs(leftY) > Math.abs(leftX) * 2)
+        {
+            leftX = 0;
+        }
+
+        if (Math.abs(leftX) > Math.abs(leftY) * 2)
+        {
+            leftY = 0;
+        }
+
+        if (Math.abs(rightY) > Math.abs(rightX) * 2)
+        {
+            rightX = 0;
+        }
+
+        if (Math.abs(rightX) > Math.abs(rightY) * 2)
+        {
+            rightY = 0;
+        }
+
         let forward = deadzone(-leftY);
         let strafe  = deadzone(leftX);
 
         let rotate  = deadzone(rightX);
         let aux     = deadzone(-rightY);        
 
+        if(invertForward) forward = -forward;
+        if(invertStrafe)  strafe  = -strafe;
+        if(invertRotate)  rotate  = -rotate;        
 
         if(!enabled)
         {
@@ -127,6 +159,16 @@
             servoRightPos
         );
     }
+
+    document
+        .getElementById("configBtn")
+        .onclick = () =>
+        {
+            document
+                .getElementById("configPanel")
+                .classList
+                .toggle("hidden");
+        };
 
     // =========================
     // WEBSOCKET TX
@@ -374,7 +416,56 @@ updateServoRight(
     servoRightTrack.getBoundingClientRect().width / 2
 );
 
+
+
 </script>
+
+
+<script>
+document
+.getElementById("invertForward")
+.onchange = (e) =>
+{
+    invertForward = e.target.checked;
+};
+
+document
+.getElementById("invertStrafe")
+.onchange = (e) =>
+{
+    invertStrafe = e.target.checked;
+};
+
+document
+.getElementById("invertRotate")
+.onchange = (e) =>
+{
+    invertRotate = e.target.checked;
+};
+
+</script>
+
+<div id="configPanel" class="hidden">
+
+    <h3>Configuración</h3>
+
+    <label>
+        <input type="checkbox" id="invertForward">
+        Invertir Adelante/Atrás
+    </label>
+
+    <label>
+        <input type="checkbox" id="invertStrafe">
+        Invertir Izquierda/Derecha
+    </label>
+
+    <label>
+        <input type="checkbox" id="invertRotate">
+        Invertir Giro
+    </label>
+
+</div>
+
 
 </body>
 </html>

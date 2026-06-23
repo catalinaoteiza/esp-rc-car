@@ -178,3 +178,33 @@ body
 
     touch-action: none;
 }
+
+
+#configBtn {
+    width: 50px;
+}
+
+#configPanel {
+    position: fixed;
+
+    top: 60px;
+    right: 10px;
+
+    background: #222;
+    color: white;
+
+    padding: 15px;
+
+    border-radius: 10px;
+
+    z-index: 1000;
+
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.hidden {
+    display: none !important;
+}
+
