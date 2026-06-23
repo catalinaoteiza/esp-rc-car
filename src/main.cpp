@@ -30,8 +30,8 @@ int motorRR;
 
 const bool invertFL = true;
 const bool invertFR = false;
-const bool invertRL = false;
-const bool invertRR = false;
+const bool invertRL = true;
+const bool invertRR = true;
 
 bool motorTestMode = true;
 
@@ -131,11 +131,6 @@ void driveMecanum(int forward, int strafe, int rotate)
     motorRL = map(motorRL, -100, 100, -255, 255);
     motorRR = map(motorRR, -100, 100, -255, 255);
 
-    if(invertFL) motorFL = -motorFL;
-    if(invertFR) motorFR = -motorFR;
-    if(invertRL) motorRL = -motorRL;
-    if(invertRR) motorRR = -motorRR;
-
     setFL(motorFL);
     setFR(motorFR);
     setRL(motorRL);
@@ -163,56 +158,19 @@ void stopAll()
 }
 
 // ====== TEST POR MOTOR ======
-void testMotors()
+void testMotor(const char* name, void (*motorFn)(int))
 {
-    Serial.println("\n===== MOTOR TEST START =====");
-
-    // FL
-    Serial.println("FL F");
-    setMotor(pwm_FL, dir_FL, 180);
-    delay(2000); 
-    Serial.println("FL B");
-    setMotor(pwm_FL, dir_FL, -180);
-    delay(2000);
-    setMotor(pwm_FL, dir_FL, 0);
+    Serial.printf("\n=== TEST %s FORWARD ===\n", name);
+    motorFn(150);
     delay(2000);
 
-    // FR
-    Serial.println("FR F");
-    setMotor(pwm_FR, dir_FR, 180);
-    delay(2000);
-    Serial.println("FR B");
-    setMotor(pwm_FR, dir_FR, -180);
-    delay(2000);
-    setMotor(pwm_FR, dir_FR, 0);
-    delay(2000);
-
-    // RL (TA6586 pero usando variables reales)
-    Serial.println("RL F");
-    setMotorTA6586(pwm_RL, dir_RL, 180);
-    delay(2000);
-    Serial.println("RL B");
-    setMotorTA6586(pwm_RL, dir_RL, -180);
-    delay(2000);
-    setMotorTA6586(pwm_RL, dir_RL, 0);
-    delay(2000);
-
-    // RR
-    Serial.println("RR F");
-    setMotorTA6586(pwm_RR, dir_RR, 180);
-    delay(2000);
-    Serial.println("RR B");
-    setMotorTA6586(pwm_RR, dir_RR, -180);
-    delay(2000);
-    setMotorTA6586(pwm_RR, dir_RR, 0);
+    Serial.printf("=== TEST %s BACKWARD ===\n", name);
+    motorFn(-150);
     delay(2000);
 
     stopAll();
-
-    Serial.println("===== MOTOR TEST END =====\n");
+    delay(1000);
 }
-
-
 
 
 void setup()
@@ -315,7 +273,12 @@ void setup()
   if (motorTestMode)
   {
     delay(2000);   // tiempo para abrir serial monitor
-    testMotors();
+    Serial.println("\n===== MOTOR TEST START =====");
+    testMotor("FL", setFL);
+    testMotor("FR", setFR);
+    testMotor("RL", setRL);
+    testMotor("RR", setRR);
+    Serial.println("===== MOTOR TEST END =====\n");
   }
  
 }
