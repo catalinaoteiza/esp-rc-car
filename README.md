@@ -38,6 +38,8 @@ Use yout phone, connect to wifi "Joystick-x" (x being the chip ID of the ESP), o
 
 You can find more detailed info about how it works and how to modify it in the following [blog post](), and see it in action in the following [youtube video]().
 
+## WS datapacket protocol
+(Forward,Strafe,Rotate,Servo 0,Servo 1)
 
 ## Used Libraries and acknowledgements
 
