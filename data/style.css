@@ -47,12 +47,45 @@ body
     border: none;
 }
 
-#status
-{
-    background: #333;
+#status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 
-    flex: 1;
-    min-width: 60px;
+    background: #333;
+    padding: 0 10px;
+    border-radius: 10px;
+    min-height: 50px;
+}
+
+/* círculo */
+#status .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: red;
+}
+
+/* estado conectado */
+#status.connected .dot {
+    background: #00e676;
+}
+
+/* estado desconectado */
+#status.disconnected .dot {
+    background: #ff1744;
+}
+
+@media (orientation: portrait) {
+    #status .label {
+        display: none;
+    }
+
+    #status {
+        justify-content: center;
+        min-width: 50px;
+    }
 }
 
 #servoRow
