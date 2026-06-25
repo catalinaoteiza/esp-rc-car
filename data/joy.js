@@ -78,6 +78,7 @@ var JoyStick = (function(container, parameters)
 	var context=canvas.getContext("2d");
 	
 	var pressed = 0; // Bool - 1=Yes - 0=No
+	var activeTouchId = null;
     var circumference = 2 * Math.PI;
     var internalRadius = (canvas.width-((canvas.width/2)+10))/2;
 	var maxMoveStick = internalRadius + 5;
@@ -155,50 +156,82 @@ var JoyStick = (function(container, parameters)
 	function onTouchStart(event) 
 	{
 		pressed = 1;
+		activeTouchId = event.changedTouches[0].identifier;
 	}
 
 	function onTouchMove(event)
 	{
-		// Prevent the browser from doing its default thing (scroll, zoom)
 		event.preventDefault();
-		if(pressed === 1 && event.targetTouches[0].target === canvas)
-		{
-			movedX = event.targetTouches[0].pageX;
-			movedY = event.targetTouches[0].pageY;
-			// Manage offset
-			if(canvas.offsetParent.tagName.toUpperCase() === "BODY")
-			{
-				movedX -= canvas.offsetLeft;
-				movedY -= canvas.offsetTop;
-			}
-			else
-			{
-				movedX -= canvas.offsetParent.offsetLeft;
-				movedY -= canvas.offsetParent.offsetTop;
-			}
-			// Delete canvas
-			context.clearRect(0, 0, canvas.width, canvas.height);
-			// Redraw object
-			drawExternal();
-			drawInternal();
-		}
-	} 
 
-	function onTouchEnd(event) 
+		if(pressed !== 1)
+			return;
+
+		let touch = null;
+
+		for(let i = 0; i < event.touches.length; i++)
+		{
+			if(event.touches[i].identifier === activeTouchId)
+			{
+				touch = event.touches[i];
+				break;
+			}
+		}
+
+		if(touch === null)
+			return;
+
+		movedX = touch.pageX;
+		movedY = touch.pageY;
+
+		// Manage offset
+		if(canvas.offsetParent.tagName.toUpperCase() === "BODY")
+		{
+			movedX -= canvas.offsetLeft;
+			movedY -= canvas.offsetTop;
+		}
+		else
+		{
+			movedX -= canvas.offsetParent.offsetLeft;
+			movedY -= canvas.offsetParent.offsetTop;
+		}
+
+		// Delete canvas
+		context.clearRect(0, 0, canvas.width, canvas.height);
+
+		// Redraw object
+		drawExternal();
+		drawInternal();
+	}
+
+	function onTouchEnd(event)
 	{
+		let myTouchEnded = false;
+
+		for(let i = 0; i < event.changedTouches.length; i++)
+		{
+			if(event.changedTouches[i].identifier === activeTouchId)
+			{
+				myTouchEnded = true;
+				break;
+			}
+		}
+
+		if(!myTouchEnded)
+			return;
+
+		activeTouchId = null;
 		pressed = 0;
-		// If required reset position store variable
+
 		if(autoReturnToCenter)
 		{
 			movedX = centerX;
 			movedY = centerY;
 		}
-		// Delete canvas
+
 		context.clearRect(0, 0, canvas.width, canvas.height);
-		// Redraw object
+
 		drawExternal();
 		drawInternal();
-		//canvas.unbind('touchmove');
 	}
 
 	/**
