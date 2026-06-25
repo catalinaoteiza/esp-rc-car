@@ -2,7 +2,6 @@ var loc = window.location;
 var WS_URL = (loc.protocol === "https:" ? "wss://" : "ws://") + window.location.hostname + ":82";
 var ws = new WebSocket(WS_URL);
 
- 
 var lastText, lastSend, sendTimeout;
 // limit sending to one message every 30 ms
 // https://github.com/neonious/lowjs_esp32_examples/blob/master/neonious_one/cellphone_controlled_rc_car/www/index.html
@@ -37,22 +36,12 @@ function send(txt)
     }
 }
 
+let JoyLeft;
+let JoyRight;
 
-ws.onopen = () =>
-{
-    console.log("WebSocket conectado");
-};
-
-ws.onclose = () =>
-{
-    console.log("WebSocket cerrado");
-};
-
-ws.onerror = (e) =>
-{
-    console.log("WebSocket error", e);
-};
-
+// =====================================================
+// SERVO SLIDERS
+// =====================================================
 
 const servoLeftTrack =
     document.getElementById("servoLeftTrack");
@@ -117,124 +106,15 @@ function updateServoRight(clientX)
     servoRightValue.textContent =
         servoRightPos + "°";
 }
+  
 
-
-
-servoLeftTrack.addEventListener(
-    "touchstart",
-    (e) =>
-    {
-        const touch = e.changedTouches[0];
-
-        servoLeftTouchId = touch.identifier;
-
-        updateServoLeft(touch.clientX);
-    },
-    { passive: false }
-);
-
-servoLeftTrack.addEventListener(
-    "touchmove",
-    (e) =>
-    {
-        for(const touch of e.changedTouches)
-        {
-            if(touch.identifier === servoLeftTouchId)
-            {
-                updateServoLeft(touch.clientX);
-                break;
-            }
-        }
-    },
-    { passive: false }
-);
-
-servoLeftTrack.addEventListener(
-    "touchend",
-    (e) =>
-    {
-        for(const touch of e.changedTouches)
-        {
-            if(touch.identifier === servoLeftTouchId)
-            {
-                servoLeftTouchId = null;
-                break;
-            }
-        }
-    }
-);
-
-servoRightTrack.addEventListener(
-    "touchstart",
-    (e) =>
-    {
-        const touch = e.changedTouches[0];
-
-        servoRightTouchId = touch.identifier;
-
-        updateServoRight(touch.clientX);
-    },
-    { passive: false }
-);
-
-servoRightTrack.addEventListener(
-    "touchmove",
-    (e) =>
-    {
-        for(const touch of e.changedTouches)
-        {
-            if(touch.identifier === servoRightTouchId)
-            {
-                updateServoRight(touch.clientX);
-                break;
-            }
-        }
-    },
-    { passive: false }
-);
-
-servoRightTrack.addEventListener(
-    "touchend",
-    (e) =>
-    {
-        for(const touch of e.changedTouches)
-        {
-            if(touch.identifier === servoRightTouchId)
-            {
-                servoRightTouchId = null;
-                break;
-            }
-        }
-    }
-);
-
-updateServoLeft(
-    servoLeftTrack.getBoundingClientRect().left +
-    servoLeftTrack.getBoundingClientRect().width / 2
-);
-
-updateServoRight(
-    servoRightTrack.getBoundingClientRect().left +
-    servoRightTrack.getBoundingClientRect().width / 2
-);
-
-    // =========================
-    // JOYSTICKS
-    // =========================
-
-    var JoyLeft = new JoyStick('joyLeft', {});
-
-    var JoyRight = new JoyStick('joyRight', {
-        title: 'joystick2'
-    });
-
-    // =========================
-    // HELPERS
-    // =========================
-
+// =====================================================
+// CONTROL PACKET GENERATION
+// =====================================================
     let invertForward = false;
     let invertStrafe  = false;
     let invertRotate  = false;
+
 
     function deadzone(value)
     {
@@ -243,6 +123,11 @@ updateServoRight(
 
     function getControlData()
     {
+            if (!JoyLeft || !JoyRight)
+            {
+                return "0,0,0,90,90";
+            }
+
         // Stick izquierdo
         let leftX  = Number(JoyLeft.GetX());
         let leftY  = Number(JoyLeft.GetY());
@@ -319,9 +204,9 @@ updateServoRight(
                 .toggle("hidden");
         };
 
-    // =========================
-    // WEBSOCKET TX
-    // =========================
+// =====================================================
+// PERIODIC TRANSMISSION
+// =====================================================
 
     let lastPacket = "";
 
@@ -357,6 +242,10 @@ document.addEventListener(
 
 let enabled = false;
 
+// =====================================================
+// BUTTONS
+// =====================================================
+
 document
 .getElementById("enableBtn")
 .onclick = () =>
@@ -369,18 +258,6 @@ document
         : "ENABLED: OFF";
 };
 
-ws.onopen = () =>
-{
-    document.getElementById("status")
-        .textContent = "CONNECTED";
-};
-
-ws.onclose = () =>
-{
-    document.getElementById("status")
-        .textContent = "DISCONNECTED";
-};
-
 document
 .getElementById("stopBtn")
 .onclick = () =>
@@ -389,11 +266,39 @@ document
 
     servoLeftPos = 90;
     servoRightPos = 90;
-
+    console.log("Stop btn");
     send("0,0,0,90,90");
 };
 
- 
+// =====================================================
+// WEBSOCKET EVENTS
+// =====================================================
+
+
+ws.onopen = () =>
+{
+    document.getElementById("status")
+        .textContent = "CONNECTED";
+    console.log("WebSocket conectado");
+};
+
+ws.onclose = () =>
+{
+    document.getElementById("status")
+        .textContent = "DISCONNECTED";
+    console.log("WebSocket cerrado");
+};
+
+ws.onerror = (e) =>
+{
+    console.log("WebSocket error", e);
+};
+
+
+// =====================================================
+// INITIALIZATION
+// =====================================================
+
 window.addEventListener("load", () =>
 {
     document.getElementById("invertForward").onchange = (e) =>
@@ -413,4 +318,143 @@ window.addEventListener("load", () =>
         invertRotate = e.target.checked;
         console.log("invert R:", invertRotate);
     };
+
+    updateServoLeft(
+        servoLeftTrack.getBoundingClientRect().left +
+        servoLeftTrack.getBoundingClientRect().width / 2
+    );
+
+    updateServoRight(
+        servoRightTrack.getBoundingClientRect().left +
+        servoRightTrack.getBoundingClientRect().width / 2
+    );
+
+
+
+    servoLeftTrack.addEventListener(
+        "touchstart",
+        (e) =>
+        {
+            const touch = e.changedTouches[0];
+
+            servoLeftTouchId = touch.identifier;
+
+            updateServoLeft(touch.clientX);
+        },
+        { passive: false }
+    );
+
+    servoLeftTrack.addEventListener(
+        "touchmove",
+        (e) =>
+        {
+            for(const touch of e.changedTouches)
+            {
+                if(touch.identifier === servoLeftTouchId)
+                {
+                    updateServoLeft(touch.clientX);
+                    break;
+                }
+            }
+        },
+        { passive: false }
+    );
+
+    servoLeftTrack.addEventListener(
+        "touchend",
+        (e) =>
+        {
+            for(const touch of e.changedTouches)
+            {
+                if(touch.identifier === servoLeftTouchId)
+                {
+                    servoLeftTouchId = null;
+                    break;
+                }
+            }
+        }
+    );
+
+    servoRightTrack.addEventListener(
+        "touchstart",
+        (e) =>
+        {
+            const touch = e.changedTouches[0];
+
+            servoRightTouchId = touch.identifier;
+
+            updateServoRight(touch.clientX);
+        },
+        { passive: false }
+    );
+
+    servoRightTrack.addEventListener(
+        "touchmove",
+        (e) =>
+        {
+            for(const touch of e.changedTouches)
+            {
+                if(touch.identifier === servoRightTouchId)
+                {
+                    updateServoRight(touch.clientX);
+                    break;
+                }
+            }
+        },
+        { passive: false }
+    );
+
+    servoRightTrack.addEventListener(
+        "touchend",
+        (e) =>
+        {
+            for(const touch of e.changedTouches)
+            {
+                if(touch.identifier === servoRightTouchId)
+                {
+                    servoRightTouchId = null;
+                    break;
+                }
+            }
+        }
+    );
+
+    // =========================
+    // JOYSTICKS
+    // =========================
+
+    createJoysticks();
+});
+
+
+function createJoysticks()
+{
+    const left = document.getElementById("joyLeft");
+    const right = document.getElementById("joyRight");
+
+    left.innerHTML = "";
+    right.innerHTML = "";
+
+    JoyLeft = new JoyStick("joyLeft", {});
+
+    JoyRight = new JoyStick(
+        "joyRight",
+        {
+            title: "joystick2"
+        }
+    );
+}
+
+
+let resizeTimer;
+
+window.addEventListener("resize", () =>
+{
+    clearTimeout(resizeTimer);
+
+    resizeTimer = setTimeout(() =>
+    {
+        JoyLeft.Resize();
+        JoyRight.Resize();
+    }, 200);
 });
