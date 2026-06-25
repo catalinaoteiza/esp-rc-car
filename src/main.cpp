@@ -28,12 +28,12 @@ int motorFR;
 int motorRL;
 int motorRR;
 
-const bool invertFL = true;
-const bool invertFR = false;
-const bool invertRL = true;
-const bool invertRR = true;
+const bool invertFL = false;
+const bool invertFR = true;
+const bool invertRL = false;
+const bool invertRR = false;
 
-bool motorTestMode = true;
+bool motorTestMode = false;
 
 int servoLeft;
 int servoRight;
