@@ -301,10 +301,18 @@ ws.onerror = (e) =>
 
 function updateConnectionStatus(connected)
 {
-    document.getElementById("status").textContent =
-        connected
-        ? "🟢 Connected"
-        : "🔴 Disconnected";
+    const status = document.getElementById("status");
+    const label = status.querySelector(".label");
+
+    status.classList.remove("connected", "disconnected");
+
+    if (connected) {
+        status.classList.add("connected");
+        label.textContent = "Connected";
+    } else {
+        status.classList.add("disconnected");
+        label.textContent = "Disconnected";
+    }
 }
 
 
@@ -471,3 +479,14 @@ window.addEventListener("resize", () =>
         JoyRight.Resize();
     }, 200);
 });
+
+
+statusDiv.classList.remove("connected", "disconnected");
+
+if (isConnected) {
+    statusDiv.classList.add("connected");
+    statusDiv.querySelector(".label").textContent = "Connected";
+} else {
+    statusDiv.classList.add("disconnected");
+    statusDiv.querySelector(".label").textContent = "Disconnected";
+}
