@@ -246,17 +246,22 @@ let enabled = false;
 // BUTTONS
 // =====================================================
 
+function updateEnableButton()
+{
+    document.getElementById("enableBtn").textContent =
+        enabled
+        ? "DISABLE"
+        : "ENABLE";
+}
+
 document
 .getElementById("enableBtn")
 .onclick = () =>
 {
     enabled = !enabled;
-
-    document.getElementById("enableBtn").textContent =
-        enabled
-        ? "ENABLED: ON"
-        : "ENABLED: OFF";
+    updateEnableButton();
 };
+
 
 document
 .getElementById("stopBtn")
@@ -277,22 +282,30 @@ document
 
 ws.onopen = () =>
 {
-    document.getElementById("status")
-        .textContent = "CONNECTED";
+    updateConnectionStatus(true);
     console.log("WebSocket conectado");
 };
 
 ws.onclose = () =>
 {
-    document.getElementById("status")
-        .textContent = "DISCONNECTED";
+    updateConnectionStatus(false);
     console.log("WebSocket cerrado");
 };
 
 ws.onerror = (e) =>
 {
+    updateConnectionStatus(false);
     console.log("WebSocket error", e);
 };
+
+
+function updateConnectionStatus(connected)
+{
+    document.getElementById("status").textContent =
+        connected
+        ? "🟢 Connected"
+        : "🔴 Disconnected";
+}
 
 
 // =====================================================
