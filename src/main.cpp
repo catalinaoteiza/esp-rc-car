@@ -111,10 +111,10 @@ void setRR(int v)
 
 void driveMecanum(int forward, int strafe, int rotate)
 {
-    motorFL = forward + strafe + rotate;
-    motorFR = forward - strafe - rotate;
-    motorRL = forward - strafe + rotate;
-    motorRR = forward + strafe - rotate;
+    motorFL = forward + strafe - rotate;
+    motorFR = forward - strafe + rotate;
+    motorRL = forward - strafe - rotate;
+    motorRR = forward + strafe + rotate;
 
     int maxValue = max(
         max(abs(motorFL), abs(motorFR)),
