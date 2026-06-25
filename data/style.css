@@ -21,8 +21,7 @@ body
 }
 
 #stopBtn,
-#enableBtn,
-#status
+#enableBtn
 {
     height: 50px;
     min-width: 110px;
@@ -51,6 +50,9 @@ body
 #status
 {
     background: #333;
+
+    flex: 1;
+    min-width: 60px;
 }
 
 #servoRow
