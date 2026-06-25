@@ -6,60 +6,75 @@ body
     font-family: Arial, sans-serif;
 }
 
-#topBar
-{
+/* =======================
+   TOP BAR (SISTEMA BASE)
+======================= */
+#topBar {
     position: fixed;
     top: 10px;
     left: 10px;
     right: 10px;
 
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
+    height: 56px;
 
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 8px;
     z-index: 1000;
 }
 
+/* =======================
+   BOTONES PRINCIPALES
+======================= */
 #stopBtn,
-#enableBtn
-{
-    height: 50px;
-    min-width: 110px;
+#enableBtn {
+    height: 100%;
+    min-width: 90px;
+
+    flex: 0 0 auto;
 
     border-radius: 12px;
 
     display: flex;
     align-items: center;
     justify-content: center;
+
+    border: none;
+    color: white;
 }
 
-#stopBtn
-{
+#stopBtn {
     background: #b71c1c;
-    color: white;
-    border: none;
 }
 
-#enableBtn
-{
+#enableBtn {
     background: #1565c0;
-    color: white;
-    border: none;
 }
 
+/* =======================
+   STATUS
+======================= */
 #status {
+    height: 100%;
+    flex: 1;
+
+    min-width: 80px;
+
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
 
     background: #333;
-    padding: 0 10px;
     border-radius: 10px;
-    min-height: 50px;
+
+    padding: 0 10px;
+
+    gap: 8px;
 }
 
-/* círculo */
+/* LED */
 #status .dot {
     width: 12px;
     height: 12px;
@@ -67,38 +82,55 @@ body
     background: red;
 }
 
-/* estado conectado */
 #status.connected .dot {
     background: #00e676;
 }
 
-/* estado desconectado */
 #status.disconnected .dot {
     background: #ff1744;
 }
 
-@media (orientation: portrait) {
+@media (max-width: 500px) {
+
+    #status {
+        min-width: 44px;
+        flex: 0 0 auto;
+        padding: 0 6px;
+    }
+
     #status .label {
         display: none;
     }
-
-    #status {
-        justify-content: center;
-        min-width: 50px;
-    }
 }
 
+/* =======================
+   CONFIG BUTTON (CUADRADO)
+======================= */
+#configBtn {
+    height: 100%;
+    aspect-ratio: 1 / 1;
+
+    flex: 0 0 auto;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 12px;
+}
+
+/* =======================
+   SERVO ROW
+======================= */
 #servoRow
 {
     position: fixed;
-
     top: 75px;
     left: 10px;
     right: 10px;
-     display: none;
-    /* display: flex; */
-    justify-content: space-between;
 
+    display: none;
+    justify-content: space-between;
     gap: 15px;
 
     z-index: 1000;
@@ -110,7 +142,6 @@ body
     max-width: 240px;
 
     background: #222;
-
     padding: 10px;
 
     border-radius: 12px;
@@ -120,72 +151,45 @@ body
     gap: 8px;
 }
 
-.servoSlider
-{
-    touch-action: manipulation;
-    pointer-events: auto;
-}
-
+/* =======================
+   JOYSTICKS
+======================= */
 #joyLeft,
 #joyRight
 {
     position: fixed;
-
     bottom: 20px;
 
-    width: 34vw;
-    height: 34vw;
+    width: 28vmin;
+    height: 28vmin;
 
     max-width: 200px;
     max-height: 200px;
 
-    min-width: 120px;
-    min-height: 120px;
+    min-width: 110px;
+    min-height: 110px;
 
     touch-action: none;
-
     z-index: 100;
 }
 
-#joyLeft
-{
-    left: 20px;
+#joyLeft { left: 20px; }
+#joyRight { right: 20px; }
+
+@media (orientation: landscape) {
+    #joyLeft,
+    #joyRight {
+        width: 22vmin;
+        height: 22vmin;
+
+        bottom: 10px;
+    }
 }
 
-#joyRight
-{
-    right: 20px;
-}
-
-
-#servoLeftTrack
-{
-    width: 140px;
-    height: 20px;
-
-    background: #444;
-    border-radius: 10px;
-
-    position: relative;
-
-    touch-action: none;
-}
-
-#servoLeftKnob
-{
-    width: 24px;
-    height: 24px;
-
-    border-radius: 50%;
-    background: #00c853;
-
-    position: absolute;
-    left: calc(50% - 12px);
-    top: -2px;
-
-    touch-action: none;
-}
-
+/* =======================
+   SERVO SLIDERS
+======================= */
+#servoLeftTrack,
 #servoRightTrack
 {
     width: 140px;
@@ -199,6 +203,7 @@ body
     touch-action: none;
 }
 
+#servoLeftKnob,
 #servoRightKnob
 {
     width: 24px;
@@ -208,20 +213,17 @@ body
     background: #00c853;
 
     position: absolute;
-    left: calc(50% - 12px);
     top: -2px;
+    left: calc(50% - 12px);
 
     touch-action: none;
 }
 
-
-#configBtn {
-    width: 50px;
-}
-
+/* =======================
+   CONFIG PANEL
+======================= */
 #configPanel {
     position: fixed;
-
     top: 60px;
     right: 10px;
 
@@ -229,7 +231,6 @@ body
     color: white;
 
     padding: 15px;
-
     border-radius: 10px;
 
     z-index: 1000;
@@ -243,3 +244,27 @@ body
     display: none !important;
 }
 
+/* =======================
+   PORTRAIT MODE (MÓVIL)
+======================= */
+@media (orientation: portrait) {
+
+    #topBar {
+        height: 44px;
+    }
+
+    #stopBtn,
+    #enableBtn {
+        min-width: 60px;
+        font-size: 12px;
+    }
+
+    #status {
+        min-width: 50px;
+        padding: 0 6px;
+    }
+
+    #configBtn {
+        font-size: 16px;
+    }
+}
