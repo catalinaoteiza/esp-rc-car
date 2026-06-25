@@ -357,4 +357,34 @@ var JoyStick = (function(container, parameters)
 		
 		return result;
 	};
+
+	this.Resize = function()
+	{
+		width = objContainer.clientWidth;
+		height = objContainer.clientHeight;
+
+		canvas.width = width;
+		canvas.height = height;
+
+		internalRadius = (canvas.width - ((canvas.width/2)+10))/2;
+		maxMoveStick = internalRadius + 5;
+		externalRadius = internalRadius + 30;
+
+		centerX = canvas.width / 2;
+		centerY = canvas.height / 2;
+
+		directionHorizontalLimitPos = canvas.width / 10;
+		directionHorizontalLimitNeg = -directionHorizontalLimitPos;
+
+		directionVerticalLimitPos = canvas.height / 10;
+		directionVerticalLimitNeg = -directionVerticalLimitPos;
+
+		movedX = centerX;
+		movedY = centerY;
+
+		context.clearRect(0, 0, canvas.width, canvas.height);
+
+		drawExternal();
+		drawInternal();
+	};	
 });
