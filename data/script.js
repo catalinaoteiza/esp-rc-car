@@ -159,7 +159,7 @@ function updateServoRight(clientX)
         }
 
         let forward = deadzone(leftY);
-        let strafe  = deadzone(leftX);
+        let strafe  = deadzone(-leftX);
 
         let rotate  = deadzone(-rightX);
         let aux     = deadzone(rightY);        
@@ -181,6 +181,10 @@ function updateServoRight(clientX)
         if (isNaN(servoLeftPos))  servoLeftPos = 90;
         if (isNaN(servoRightPos)) servoRightPos = 90;
 
+        // F: + B - 
+        // Strafe R: + ; L: - 
+        // rotate CCW: > 0; CW : < 0 ,  following robotics convention
+        // 
         return (
             forward +
             "," +
