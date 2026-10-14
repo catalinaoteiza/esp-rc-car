@@ -185,6 +185,94 @@ This roadmap outlines potential improvements for the ESP-based WiFi-controlled r
   - Evaluate centralized control of multiple units.
   - Isolate command channels and safety states for each robot.
 
+
+## Phase 8 — Multi-User Control and Modular Dashboard
+
+**Goal:** Allow multiple clients to connect simultaneously, access different control panels, and interact with independent robot subsystems.
+
+### 8.1 Multi-Client Connectivity
+
+- [ ] Support multiple simultaneous WebSocket clients.
+- [ ] Maintain an independent connection state for each client.
+- [ ] Broadcast telemetry and robot status updates to authorized clients.
+- [ ] Handle client disconnections without interrupting unrelated sessions.
+- [ ] Implement configurable limits for the number of connected clients.
+
+### 8.2 User Roles and Permissions
+
+- [ ] Define user roles and access permissions.
+  - **Driver:** Controls robot movement.
+  - **Operator:** Controls auxiliary actuators and peripherals.
+  - **Observer:** Can view telemetry and robot status without issuing control commands.
+  - **Administrator:** Manages configuration, permissions, and system settings.
+- [ ] Restrict commands according to the assigned role.
+- [ ] Prevent multiple clients from unintentionally controlling the same subsystem.
+- [ ] Provide clear feedback when a command is rejected because of insufficient permissions.
+
+### 8.3 Independent Control Panels
+
+- [ ] Design a modular dashboard composed of independent panels.
+- [ ] Allow different users to open different panels simultaneously.
+- [ ] Separate chassis movement controls from auxiliary actuator controls.
+- [ ] Add optional panels for servos, robotic arms, tools, or other peripherals.
+- [ ] Provide a telemetry-only dashboard for monitoring system variables.
+- [ ] Allow new panels to be added without modifying the core dashboard architecture.
+
+### 8.4 Resource Ownership and Control Arbitration
+
+- [ ] Define ownership rules for each controllable subsystem.
+- [ ] Implement a control lease or exclusive-control mechanism for critical resources.
+- [ ] Allow a driver to acquire or release control of the chassis.
+- [ ] Allow an operator to control an independent actuator group without interrupting chassis movement.
+- [ ] Expire control leases when a client disconnects or stops sending valid commands.
+- [ ] Define priority and conflict-resolution rules for simultaneous commands.
+- [ ] Ensure safety-critical stop commands cannot be overridden by ordinary movement commands.
+
+### 8.5 Real-Time Telemetry Distribution
+
+- [ ] Separate control commands from telemetry messages.
+- [ ] Publish sensor readings, battery voltage, motor outputs, and system status to subscribed clients.
+- [ ] Allow clients to subscribe only to the telemetry topics they need.
+- [ ] Support configurable telemetry update rates.
+- [ ] Prevent slow or disconnected clients from blocking control processing.
+- [ ] Add live charts, status indicators, and diagnostic panels.
+
+### 8.6 Modular Subsystem Architecture
+
+- [ ] Introduce a subsystem registry for available robot capabilities.
+- [ ] Define a common interface for registering control panels and command handlers.
+- [ ] Associate each subsystem with its own commands, telemetry topics, and permissions.
+- [ ] Support optional modules without requiring changes to unrelated subsystems.
+- [ ] Document the protocol required to integrate new hardware modules.
+
+### 8.7 Session Management and Security
+
+- [ ] Identify clients and manage their sessions.
+- [ ] Authenticate clients before granting control privileges.
+- [ ] Prevent unauthorized clients from issuing commands.
+- [ ] Validate all incoming commands on the firmware.
+- [ ] Protect configuration changes and administrative operations.
+- [ ] Define safe behavior when the driver disconnects or control ownership expires.
+
+### Example Use Cases
+
+| Client | Panel | Permissions |
+|---|---|---|
+| Client 1 | Chassis Control | Drive, strafe, rotate, stop |
+| Client 2 | Auxiliary Actuators | Operate assigned servos, arms, or tools |
+| Client 3 | Telemetry Dashboard | View sensors, battery, motor outputs, and diagnostics |
+| Client 4 | Administration | Configure supported settings and manage access |
+
+### Acceptance Criteria
+
+- Multiple clients can connect and receive updates simultaneously.
+- Each client sees the panels available to its role.
+- A telemetry observer cannot issue movement commands.
+- Independent subsystems can be controlled concurrently when their resources do not conflict.
+- Conflicting commands to the same subsystem are handled according to explicit ownership rules.
+- Client disconnection, timeout, or loss of control ownership triggers the appropriate safe state.
+- Adding a new subsystem does not require rewriting the existing networking layer or unrelated control panels.
+
 ---
 
 ## Suggested Milestones
