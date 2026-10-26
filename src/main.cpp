@@ -18,25 +18,46 @@ using namespace websockets;
 WebsocketsServer server;
 AsyncWebServer webserver(80);
 
-int forward;
-int strafe;
-int rotate;
-int aux;
+// ============================================================
+// Movement commands received from the WebSocket client
+// ============================================================
 
-int motorFL;
-int motorFR;
-int motorRL;
-int motorRR;
+int forward;  // Longitudinal movement command: forward (+), backward (-)
+int strafe;   // Lateral movement command: right (+), left (-)
+int rotate;   // Rotation command around the vertical axis
+int aux;      // Auxiliary command reserved for future controls
 
-const bool invertFL = false;
-const bool invertFR = true;
-const bool invertRL = false;
-const bool invertRR = false;
 
-bool motorTestMode = false;
+// ============================================================
+// Calculated motor outputs
+// ============================================================
 
-int servoLeft;
-int servoRight;
+int motorFL;  // Front-left motor output (-255 to 255)
+int motorFR;  // Front-right motor output (-255 to 255)
+int motorRL;  // Rear-left motor output (-255 to 255)
+int motorRR;  // Rear-right motor output (-255 to 255)
+
+
+// ============================================================
+// Motor configuration
+// ============================================================
+
+const bool invertFL = false;  // Reverse front-left motor direction
+const bool invertFR = true;   // Reverse front-right motor direction
+const bool invertRL = false;  // Reverse rear-left motor direction
+const bool invertRR = false;  // Reverse rear-right motor direction
+
+bool motorTestMode = false;   // Enable individual motor testing mode
+
+
+// ============================================================
+// Servo commands received from the WebSocket client
+// ============================================================
+
+int servoLeft;   // Left servo position or control value
+int servoRight;  // Right servo position or control value
+
+
 
 
 void setMotor(int pwmPin, int dirPin, int value)
@@ -287,23 +308,37 @@ void setup()
 }
  
 // handle http messages
+
+// ============================================================
+// WebSocket message handler
+// ============================================================
+
 void handle_message(WebsocketsMessage msg)
 {
+    // Retrieve the message payload.
+    // Expected format: forward,strafe,rotate,servoLeft,servoRight
     String data = msg.data();
 
+    // Locate the comma separators between the five control values.
     int p1 = data.indexOf(',');
     int p2 = data.indexOf(',', p1 + 1);
     int p3 = data.indexOf(',', p2 + 1);
     int p4 = data.indexOf(',', p3 + 1);
 
+    // Parse movement commands from the received message.
     forward = data.substring(0, p1).toInt();
     strafe  = data.substring(p1 + 1, p2).toInt();
     rotate  = data.substring(p2 + 1, p3).toInt();
-    servoLeft = data.substring(p3 + 1, p4).toInt();
-    servoRight= data.substring(p4 + 1).toInt();
 
+    // Parse servo control values.
+    servoLeft  = data.substring(p3 + 1, p4).toInt();
+    servoRight = data.substring(p4 + 1).toInt();
+
+    // Calculate and apply the required motor outputs.
     driveMecanum(forward, strafe, rotate);
 
+    // Print received commands and calculated motor outputs
+    // to the serial monitor for debugging and telemetry.
     Serial.printf(
         "F:%d S:%d R:%d SL:%d SR:%d | FL:%d FR:%d RL:%d RR:%d\n",
         forward,
@@ -317,8 +352,6 @@ void handle_message(WebsocketsMessage msg)
         motorRR
     );
 }
- 
-
 
 WebsocketsClient client;
 
