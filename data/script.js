@@ -39,6 +39,12 @@ function send(txt)
 let JoyLeft;
 let JoyRight;
 
+
+// Velocidad de cada motor auxiliar: -100 a 100.
+let auxMotor1 = 0;
+let auxMotor2 = 0;
+let auxMotor3 = 0;
+
 // =====================================================
 // SERVO SLIDERS
 // =====================================================
@@ -66,6 +72,9 @@ let servoLeftTouchId = null;
 
 let servoRightPos = 90;
 let servoRightTouchId = null;
+
+// Posición del servo: 0 a 100.
+let auxServoPosition = 50;
 
 function updateServoLeft(clientX)
 {
@@ -121,113 +130,117 @@ function updateServoRight(clientX)
         return Math.abs(value) < 10 ? 0 : value;
     }
 
-    function getControlData()
+
+function getControlData()
+{
+    // Si los joysticks no están disponibles, detener los motores.
+    if (!JoyLeft || !JoyRight)
     {
-            if (!JoyLeft || !JoyRight)
-            {
-                return "0,0,0,90,90";
-            }
-
-        // Stick izquierdo
-        let leftX  = Number(JoyLeft.GetX());
-        let leftY  = Number(JoyLeft.GetY());
-        
-        // Stick derecho
-        let rightX = Number(JoyRight.GetX());
-        let rightY = Number(JoyRight.GetY());
-
-        // Asistencia direccional
-
-        if (Math.abs(leftY) > Math.abs(leftX) * 2)
-        {
-            leftX = 0;
-        }
-
-        if (Math.abs(leftX) > Math.abs(leftY) * 2)
-        {
-            leftY = 0;
-        }
-
-        if (Math.abs(rightY) > Math.abs(rightX) * 2)
-        {
-            rightX = 0;
-        }
-
-        if (Math.abs(rightX) > Math.abs(rightY) * 2)
-        {
-            rightY = 0;
-        }
-
-        let forward = deadzone(leftY);
-        let strafe  = deadzone(-leftX);
-
-        let rotate  = deadzone(-rightX);
-        let aux     = deadzone(rightY);        
-
-        if(invertForward) forward = -forward;
-        if(invertStrafe)  strafe  = -strafe;
-        if(invertRotate)  rotate  = -rotate;        
-
-        if(!enabled)
-        {
-            forward = 0;
-            strafe = 0;
-            rotate = 0;
-            aux = 0; 
-
-            return "0,0,0,90,90";
-        }
-
-        if (isNaN(servoLeftPos))  servoLeftPos = 90;
-        if (isNaN(servoRightPos)) servoRightPos = 90;
-
-        // F: + B - 
-        // Strafe R: + ; L: - 
-        // rotate CCW: > 0; CW : < 0 ,  following robotics convention
-        // 
-        return (
-            forward +
-            "," +
-            strafe +
-            "," +
-            rotate +
-            "," +
-            servoLeftPos +
-            "," +
-            servoRightPos
-        );
+        return "0,0,0,0,0,0,50";
     }
 
-    document
-        .getElementById("configBtn")
-        .onclick = () =>
-        {
-            document
-                .getElementById("configPanel")
-                .classList
-                .toggle("hidden");
-        };
+    let leftX  = Number(JoyLeft.GetX());
+    let leftY  = Number(JoyLeft.GetY());
+    let rightX = Number(JoyRight.GetX());
+    let rightY = Number(JoyRight.GetY());
+
+    // Priorizar el eje dominante para evitar movimientos diagonales.
+    if (Math.abs(leftY) > Math.abs(leftX) * 2) leftX = 0;
+    if (Math.abs(leftX) > Math.abs(leftY) * 2) leftY = 0;
+    if (Math.abs(rightY) > Math.abs(rightX) * 2) rightX = 0;
+    if (Math.abs(rightX) > Math.abs(rightY) * 2) rightY = 0;
+
+    // Joystick izquierdo: avance y desplazamiento lateral.
+    let forward = deadzone(leftY);
+    let strafe  = deadzone(-leftX);
+
+    // Joystick derecho: rotación.
+    let rotate = deadzone(-rightX);
+
+    // Los motores auxiliares se controlan desde la interfaz.
+    let motor1 = Number(auxMotor1);
+    let motor2 = Number(auxMotor2);
+    let motor3 = Number(auxMotor3);
+
+    // Posición del único servo: rango de 0 a 100.
+    let servoPosition = Number(auxServoPosition);
+
+    // Aplicar inversiones de los controles principales.
+    if (invertForward) forward = -forward;
+    if (invertStrafe)  strafe  = -strafe;
+    if (invertRotate)  rotate  = -rotate;
+
+    // Deshabilitar el movimiento detiene todos los motores.
+    if (!enabled)
+    {
+        forward = 0;
+        strafe  = 0;
+        rotate  = 0;
+        motor1  = 0;
+        motor2  = 0;
+        motor3  = 0;
+    }
+
+    // Limitar las velocidades de los motores al rango -100 a 100.
+    forward = Math.max(-100, Math.min(100, Math.round(forward)));
+    strafe  = Math.max(-100, Math.min(100, Math.round(strafe)));
+    rotate  = Math.max(-100, Math.min(100, Math.round(rotate)));
+
+    motor1 = Math.max(-100, Math.min(100, Math.round(motor1)));
+    motor2 = Math.max(-100, Math.min(100, Math.round(motor2)));
+    motor3 = Math.max(-100, Math.min(100, Math.round(motor3)));
+
+    // Validar la posición del servo.
+    if (!Number.isFinite(servoPosition)) servoPosition = 50;
+    servoPosition = Math.max(0, Math.min(100, Math.round(servoPosition)));
+
+    // Protocolo: avance, lateral, rotación, motor1, motor2, motor3, servo.
+    return [
+        forward,
+        strafe,
+        rotate,
+        motor1,
+        motor2,
+        motor3,
+        servoPosition
+    ].join(",");
+}
+
+
+// =====================================================
+// CONFIGURATION PANEL
+// =====================================================
+
+document
+    .getElementById("configBtn")
+    .onclick = () =>
+    {
+        document
+            .getElementById("configPanel")
+            .classList
+            .toggle("hidden");
+    };
+
 
 // =====================================================
 // PERIODIC TRANSMISSION
 // =====================================================
 
-    let lastPacket = "";
+let lastPacket = "";
 
-    setInterval(() =>
+setInterval(() =>
+{
+    const packet = getControlData();
+
+    if (packet !== lastPacket)
     {
-        let packet = getControlData();
+        console.log(packet);
+        send(packet);
 
-        if(packet !== lastPacket)
-        {
-            console.log(packet);
+        lastPacket = packet;
+    }
+}, 50);
 
-            send(packet);
-
-            lastPacket = packet;
-        }
-
-    }, 50);
 
 document.addEventListener(
     "touchmove",
