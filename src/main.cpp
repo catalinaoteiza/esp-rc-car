@@ -5,6 +5,7 @@
 
 #if defined(ESP32)
   #include <WiFi.h>
+  #include <ESP32Servo.h>
 #else
   #include <ESP8266WiFi.h>
 #endif
@@ -17,6 +18,9 @@
 using namespace websockets;
 WebsocketsServer server;
 AsyncWebServer webserver(80);
+
+WebsocketsClient client;
+
 
 // ============================================================
 // Movement commands received from the WebSocket client
@@ -54,9 +58,32 @@ bool motorTestMode = false;   // Enable individual motor testing mode
 // Servo commands received from the WebSocket client
 // ============================================================
 
-int servoLeft;   // Left servo position or control value
-int servoRight;  // Right servo position or control value
+// ============================================================
+// Auxiliary servo configuration
+// ============================================================
 
+#if defined(ESP32)
+  Servo auxServo;             // Auxiliary servo controller
+#endif
+
+
+int servoPosition = 0;     // Logical servo position: 0 to 100
+
+// Adjustable servo travel limits, in microseconds.
+// These limits can be tuned to match the mechanism.
+int servoMinPulseUs = 1000;
+int servoMaxPulseUs = 2000;
+
+
+
+// ============================================================
+// Auxiliary motor commands
+// Logical range: -100 to 100
+// ============================================================
+
+int motor1 = 0;  // Auxiliary motor 1 command
+int motor2 = 0;  // Auxiliary motor 2 command
+int motor3 = 0;  // Auxiliary motor 3 command
 
 
 
@@ -197,105 +224,248 @@ void testMotor(const char* name, void (*motorFn)(int))
 }
 
 
+// ============================================================
+// Bidirectional auxiliary DC motor control
+// ============================================================
+
+void setAuxMotor(int pinA, int pinB, int speed)
+{
+    // Restrict the command to the logical range.
+    speed = constrain(speed, -100, 100);
+
+    // Convert speed magnitude to an 8-bit PWM duty cycle.
+    int pwm = map(abs(speed), 0, 100, 0, 255);
+
+    if (speed > 0)
+    {
+        // Forward: PWM on input A, input B LOW.
+        analogWrite(pinA, pwm);
+        analogWrite(pinB, 0);
+    }
+    else if (speed < 0)
+    {
+        // Reverse: input A LOW, PWM on input B.
+        analogWrite(pinA, 0);
+        analogWrite(pinB, pwm);
+    }
+    else
+    {
+        // Stop: both inputs LOW.
+        analogWrite(pinA, 0);
+        analogWrite(pinB, 0);
+    }
+}
+
+
+// ============================================================
+// Individual auxiliary motor functions
+// ============================================================
+
+void setMotor1(int speed)
+{
+    motor1 = constrain(speed, -100, 100);
+    setAuxMotor(pwm_M1, dir_M1, motor1);
+}
+
+void setMotor2(int speed)
+{
+    motor2 = constrain(speed, -100, 100);
+    setAuxMotor(pwm_M2, dir_M2, motor2);
+}
+
+void setMotor3(int speed)
+{
+    motor3 = constrain(speed, -100, 100);
+    setAuxMotor(pwm_M3, dir_M3, motor3);
+}
+
+
+// ============================================================
+// Auxiliary servo control
+// Logical range: 0 to 100
+// ============================================================
+
+void setServoPosition(int position)
+{
+    // Restrict the command to the logical range.
+    position = constrain(position, 0, 100);
+
+    // Map the logical position to the configured pulse limits.
+    int pulseUs = map(
+        position,
+        0, 100,
+        servoMinPulseUs, servoMaxPulseUs
+    );
+
+    // Apply the target position to the servo.
+    auxServo.writeMicroseconds(pulseUs);
+
+    // Store the last requested position.
+    servoPosition = position;
+}
+
+
+void printFilesystemInfo()
+{
+#if defined(ESP8266)
+
+    FSInfo fs_info;
+
+    if (LittleFS.info(fs_info))
+    {
+        Serial.printf("Filesystem total: %u bytes\n",
+                      (unsigned int)fs_info.totalBytes);
+
+        Serial.printf("Filesystem used: %u bytes\n",
+                      (unsigned int)fs_info.usedBytes);
+    }
+
+#elif defined(ESP32)
+
+    size_t totalBytes = LittleFS.totalBytes();
+    size_t usedBytes  = LittleFS.usedBytes();
+
+    Serial.printf("Filesystem total: %u bytes\n",
+                  (unsigned int)totalBytes);
+
+    Serial.printf("Filesystem used: %u bytes\n",
+                  (unsigned int)usedBytes);
+
+#endif
+}
+
+
 void setup()
 {
-  Serial.begin(115200);
-  Serial.println("");
+    Serial.begin(115200);
+    Serial.println("");
 
-  ESP.wdtEnable(5000);
-  // Mount FS
-  if (!LittleFS.begin())
-  {
-      Serial.println("LittleFS mount failed");
-      return;
-  }
+    #if defined(ESP8266)
+        ESP.wdtEnable(5000);
+    #elif defined(ESP32)
+        // Configure the ESP32 watchdog here only if required.
+        // The API depends on the installed Arduino-ESP32 version.
+    #endif
 
-  FSInfo fs_info;
-  LittleFS.info(fs_info);
+    // Mount FS
+    if (!LittleFS.begin())
+    {
+        Serial.println("LittleFS mount failed");
+        return;
+    }
 
-  Serial.printf(
-      "LittleFS: %u / %u bytes\n",
-      fs_info.usedBytes,
-      fs_info.totalBytes
-  );  
+    printFilesystemInfo();
 
-  pinMode(pwm_FL, OUTPUT);
-  pinMode(dir_FL, OUTPUT);
+    pinMode(pwm_FL, OUTPUT);
+    pinMode(dir_FL, OUTPUT);
 
-  pinMode(pwm_FR, OUTPUT);
-  pinMode(dir_FR, OUTPUT);
+    pinMode(pwm_FR, OUTPUT);
+    pinMode(dir_FR, OUTPUT);
 
-  pinMode(pwm_RL, OUTPUT);
-  pinMode(dir_RL, OUTPUT);
+    pinMode(pwm_RL, OUTPUT);
+    pinMode(dir_RL, OUTPUT);
 
-  pinMode(pwm_RR, OUTPUT);
-  pinMode(dir_RR, OUTPUT);
+    pinMode(pwm_RR, OUTPUT);
+    pinMode(dir_RR, OUTPUT);
 
 
-  // Create a unique wifi ssid
-  String chipHex = String(ESP.getChipId(), HEX);
-  chipHex.toUpperCase();
-  String ssid = String(ssid_base) + chipHex;
+    // Configure auxiliary motor pins.
+    pinMode(pwm_M1, OUTPUT);
+    pinMode(dir_M1, OUTPUT);
 
-  // Create AP
-  WiFi.softAP(ssid, password);
-  IPAddress IP = WiFi.softAPIP();
-  Serial.println("Wifi Name: " + ssid);
-  Serial.println("Password: " + String(password) );
-  Serial.print("AP IP address: ");
-  Serial.println(IP);
+    pinMode(pwm_M2, OUTPUT);
+    pinMode(dir_M2, OUTPUT);
 
-  ArduinoOTA.setHostname(ssid.c_str());
+    pinMode(pwm_M3, OUTPUT);
+    pinMode(dir_M3, OUTPUT);
 
-  ArduinoOTA.onStart([]() {
-      Serial.println("OTA Start");
-  });
+    // Ensure all auxiliary motors start stopped.
+    setMotor1(0);
+    setMotor2(0);
+    setMotor3(0);
 
-  ArduinoOTA.onEnd([]() {
-      Serial.println("\nOTA End");
-  });
+    // Configure the servo pulse range and attach its signal pin.
+    auxServo.attach(servoPin, servoMinPulseUs, servoMaxPulseUs);
 
-  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-      Serial.printf(
-          "OTA Progress: %u%%\r",
-          (progress * 100) / total
-      );
-  });
+    // Initialize the servo at logical position zero.
+    setServoPosition(0);
 
-  ArduinoOTA.onError([](ota_error_t error) {
-      Serial.printf(
-          "OTA Error[%u]\n",
-          error
-      );
-  });
+    String chipHex;
 
-  ArduinoOTA.begin();
+    #if defined(ESP8266)
 
-  Serial.print("Free heap: ");
-  Serial.println(ESP.getFreeHeap());
+        chipHex = String(ESP.getChipId(), HEX);
 
-  Serial.println("OTA Ready");  
-  Serial.print("OTA IP: ");
-  Serial.println(WiFi.softAPIP());
-  Serial.print("OTA Hostname: ");
-  Serial.println(ssid);
+    #elif defined(ESP32)
 
-  // Serve all files from root
-  webserver.serveStatic("/", LittleFS, "/");
-  webserver.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
-      request->send(LittleFS, "/index.html", "text/html");
-  });  
+        chipHex = String((uint32_t)(ESP.getEfuseMac() & 0xFFFFFFFFULL), HEX);
 
-  // start server
-  webserver.begin();
-  server.listen(82);
+    #endif
 
-  // Verbose
-  Serial.print("Server status: ");
-  Serial.println(server.available());
+    // Create a unique wifi ssid
+    
+    chipHex.toUpperCase();
+    String ssid = String(ssid_base) + chipHex;
 
-  if (motorTestMode)
-  {
+    // Create AP
+    WiFi.softAP(ssid, password);
+    IPAddress IP = WiFi.softAPIP();
+    Serial.println("Wifi Name: " + ssid);
+    Serial.println("Password: " + String(password) );
+    Serial.print("AP IP address: ");
+    Serial.println(IP);
+
+    ArduinoOTA.setHostname(ssid.c_str());
+
+    ArduinoOTA.onStart([]() {
+        Serial.println("OTA Start");
+    });
+
+    ArduinoOTA.onEnd([]() {
+        Serial.println("\nOTA End");
+    });
+
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+        Serial.printf(
+            "OTA Progress: %u%%\r",
+            (progress * 100) / total
+        );
+    });
+
+    ArduinoOTA.onError([](ota_error_t error) {
+        Serial.printf(
+            "OTA Error[%u]\n",
+            error
+        );
+    });
+
+    ArduinoOTA.begin();
+
+    Serial.print("Free heap: ");
+    Serial.println(ESP.getFreeHeap());
+
+    Serial.println("OTA Ready");  
+    Serial.print("OTA IP: ");
+    Serial.println(WiFi.softAPIP());
+    Serial.print("OTA Hostname: ");
+    Serial.println(ssid);
+
+    // Serve all files from root
+    webserver.serveStatic("/", LittleFS, "/");
+    webserver.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+        request->send(LittleFS, "/index.html", "text/html");
+    });  
+
+    // start server
+    webserver.begin();
+    server.listen(82);
+
+    // Verbose
+    Serial.print("Server status: ");
+    Serial.println(server.available());
+
+    if (motorTestMode)
+    {
     delay(2000);   // tiempo para abrir serial monitor
     Serial.println("\n===== MOTOR TEST START =====");
     testMotor("FL", setFL);
@@ -303,57 +473,74 @@ void setup()
     testMotor("RL", setRL);
     testMotor("RR", setRR);
     Serial.println("===== MOTOR TEST END =====\n");
-  }
+    }
  
 }
  
-// handle http messages
-
 // ============================================================
 // WebSocket message handler
+// Expected format:
+// forward,strafe,rotate,motor1,motor2,motor3,servoPosition
 // ============================================================
 
 void handle_message(WebsocketsMessage msg)
 {
-    // Retrieve the message payload.
-    // Expected format: forward,strafe,rotate,servoLeft,servoRight
     String data = msg.data();
 
-    // Locate the comma separators between the five control values.
-    int p1 = data.indexOf(',');
-    int p2 = data.indexOf(',', p1 + 1);
-    int p3 = data.indexOf(',', p2 + 1);
-    int p4 = data.indexOf(',', p3 + 1);
+    // Locate the six separators required for seven values.
+    int p[6];
 
-    // Parse movement commands from the received message.
-    forward = data.substring(0, p1).toInt();
-    strafe  = data.substring(p1 + 1, p2).toInt();
-    rotate  = data.substring(p2 + 1, p3).toInt();
+    int start = 0;
 
-    // Parse servo control values.
-    servoLeft  = data.substring(p3 + 1, p4).toInt();
-    servoRight = data.substring(p4 + 1).toInt();
+    for (int i = 0; i < 6; i++)
+    {
+        p[i] = data.indexOf(',', start);
 
-    // Calculate and apply the required motor outputs.
-    driveMecanum(forward, strafe, rotate);
+        // Reject malformed or incomplete messages.
+        if (p[i] < 0)
+            return;
 
-    // Print received commands and calculated motor outputs
-    // to the serial monitor for debugging and telemetry.
+        start = p[i] + 1;
+    }
+
+    // Parse the three drive commands.
+    forward = data.substring(0, p[0]).toInt();
+    strafe  = data.substring(p[0] + 1, p[1]).toInt();
+    rotate  = data.substring(p[1] + 1, p[2]).toInt();
+
+    // Parse the three auxiliary DC motor commands.
+    motor1 = data.substring(p[2] + 1, p[3]).toInt();
+    motor2 = data.substring(p[3] + 1, p[4]).toInt();
+    motor3 = data.substring(p[4] + 1, p[5]).toInt();
+
+    // Parse the auxiliary servo position.
+    servoPosition = data.substring(p[5] + 1).toInt();
+
+    // Apply the drive commands.
+    driveMecanum(
+        constrain(forward, -100, 100),
+        constrain(strafe, -100, 100),
+        constrain(rotate, -100, 100)
+    );
+
+    // Apply the auxiliary motor commands.
+    setMotor1(motor1);
+    setMotor2(motor2);
+    setMotor3(motor3);
+
+    // Apply the servo command.
+    setServoPosition(servoPosition);
+
+    // Print the received commands for debugging.
     Serial.printf(
-        "F:%d S:%d R:%d SL:%d SR:%d | FL:%d FR:%d RL:%d RR:%d\n",
-        forward,
-        strafe,
-        rotate,
-        servoLeft,
-        servoRight,
-        motorFL,
-        motorFR,
-        motorRL,
-        motorRR
+        "F:%d S:%d R:%d | M1:%d M2:%d M3:%d | SV:%d\n",
+        forward, strafe, rotate,
+        motor1, motor2, motor3,
+        servoPosition
     );
 }
 
-WebsocketsClient client;
+
 
 void loop()
 {
