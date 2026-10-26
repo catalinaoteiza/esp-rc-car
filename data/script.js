@@ -484,13 +484,3 @@ window.addEventListener("resize", () =>
     }, 200);
 });
 
-
-statusDiv.classList.remove("connected", "disconnected");
-
-if (isConnected) {
-    statusDiv.classList.add("connected");
-    statusDiv.querySelector(".label").textContent = "Connected";
-} else {
-    statusDiv.classList.add("disconnected");
-    statusDiv.querySelector(".label").textContent = "Disconnected";
-}
