@@ -74,47 +74,88 @@ let servoRightPos = 90;
 let servoRightTouchId = null;
 
 // Posición del servo: 0 a 100.
-let auxServoPosition = 50;
+let defaultServoPosition = 50  ; 
+let auxServoPosition = defaultServoPosition;
 
-function updateServoLeft(clientX)
-{
-    const rect =
-        servoLeftTrack.getBoundingClientRect();
 
-    let x = clientX - rect.left;
 
-    x = Math.max(0, Math.min(rect.width, x));
+/* =======================
+   CONTROLES MOTORES AUXILIARES
+======================= */
 
-    servoLeftKnob.style.left =
-        (x - 12) + "px";
-
-    servoLeftPos = Math.round(
-        (x / rect.width) * 180
-    );
-
-    servoLeftValue.textContent =
-        servoLeftPos + "°";
+// Actualiza la variable correspondiente al motor.
+function setAuxMotor(motor, value) {
+    if (motor === 1) auxMotor1 = value;
+    if (motor === 2) auxMotor2 = value;
+    if (motor === 3) auxMotor3 = value;
 }
 
-function updateServoRight(clientX)
-{
-    const rect =
-        servoRightTrack.getBoundingClientRect();
+// CW = 100, CCW = -100.
+// El motor se detiene cuando se suelta el botón.
+document.querySelectorAll(".motorBtn").forEach(button => {
+    const motor = Number(button.dataset.motor);
+    const direction = Number(button.dataset.direction);
 
-    let x = clientX - rect.left;
+    button.addEventListener("pointerdown", event => {
+        event.preventDefault();
 
-    x = Math.max(0, Math.min(rect.width, x));
+        if (!enabled) return;
 
-    servoRightKnob.style.left =
-        (x - 12) + "px";
+        setAuxMotor(motor, direction);
 
-    servoRightPos = Math.round(
-        (x / rect.width) * 180
-    );
+        if (button.setPointerCapture) {
+            button.setPointerCapture(event.pointerId);
+        }
+    });
 
-    servoRightValue.textContent =
-        servoRightPos + "°";
-}
+    function releaseMotor() {
+        const currentValue =
+            motor === 1 ? auxMotor1 :
+            motor === 2 ? auxMotor2 : auxMotor3;
+
+        if (currentValue === direction) {
+            setAuxMotor(motor, 0);
+        }
+    }
+
+    button.addEventListener("pointerup", releaseMotor);
+    button.addEventListener("pointercancel", releaseMotor);
+    button.addEventListener("lostpointercapture", releaseMotor);
+});
+
+/* =======================
+   CONTROL DEL SERVO
+======================= */
+
+const servoSlider = document.getElementById("servoSlider");
+const servoValue = document.getElementById("servoValue");
+
+servoSlider.addEventListener("input", () => {
+    if (!enabled) {
+        console.log("[UI] Servo ignorado: sistema deshabilitado");
+        return;
+    }
+
+    auxServoPosition = Number(servoSlider.value);
+    servoValue.textContent = `${auxServoPosition}%`;
+});
+
+// Inicializar el valor mostrado.
+auxServoPosition = Number(servoSlider.value);
+servoValue.textContent = `${auxServoPosition}%`;
+
+/* =======================
+   STOP GLOBAL
+======================= */
+
+// Añadir el evento sin reemplazar el manejador STOP existente.
+document.getElementById("stopBtn").addEventListener("click", () => {
+    setAuxMotor(1, 0);
+    setAuxMotor(2, 0);
+    setAuxMotor(3, 0);
+});
+
+
   
 
 // =====================================================
@@ -180,6 +221,8 @@ function getControlData()
         motor2  = 0;
         motor3  = 0;
     }
+
+
 
     // Limitar las velocidades de los motores al rango -100 a 100.
     forward = Math.max(-100, Math.min(100, Math.round(forward)));
@@ -277,6 +320,7 @@ document
 {
     enabled = !enabled;
     updateEnableButton();
+    console.log(`[UI] ${enabled ? "ENABLE" : "DISABLE"}`);
 };
 
 
@@ -288,7 +332,7 @@ document
 
     servoLeftPos = 90;
     servoRightPos = 90;
-    console.log("Stop btn");
+    console.log("[UI] Stop button");
     send("0,0,0,90,90");
 };
 
@@ -357,105 +401,7 @@ window.addEventListener("load", () =>
         console.log("invert R:", invertRotate);
     };
 
-    updateServoLeft(
-        servoLeftTrack.getBoundingClientRect().left +
-        servoLeftTrack.getBoundingClientRect().width / 2
-    );
 
-    updateServoRight(
-        servoRightTrack.getBoundingClientRect().left +
-        servoRightTrack.getBoundingClientRect().width / 2
-    );
-
-
-
-    servoLeftTrack.addEventListener(
-        "touchstart",
-        (e) =>
-        {
-            const touch = e.changedTouches[0];
-
-            servoLeftTouchId = touch.identifier;
-
-            updateServoLeft(touch.clientX);
-        },
-        { passive: false }
-    );
-
-    servoLeftTrack.addEventListener(
-        "touchmove",
-        (e) =>
-        {
-            for(const touch of e.changedTouches)
-            {
-                if(touch.identifier === servoLeftTouchId)
-                {
-                    updateServoLeft(touch.clientX);
-                    break;
-                }
-            }
-        },
-        { passive: false }
-    );
-
-    servoLeftTrack.addEventListener(
-        "touchend",
-        (e) =>
-        {
-            for(const touch of e.changedTouches)
-            {
-                if(touch.identifier === servoLeftTouchId)
-                {
-                    servoLeftTouchId = null;
-                    break;
-                }
-            }
-        }
-    );
-
-    servoRightTrack.addEventListener(
-        "touchstart",
-        (e) =>
-        {
-            const touch = e.changedTouches[0];
-
-            servoRightTouchId = touch.identifier;
-
-            updateServoRight(touch.clientX);
-        },
-        { passive: false }
-    );
-
-    servoRightTrack.addEventListener(
-        "touchmove",
-        (e) =>
-        {
-            for(const touch of e.changedTouches)
-            {
-                if(touch.identifier === servoRightTouchId)
-                {
-                    updateServoRight(touch.clientX);
-                    break;
-                }
-            }
-        },
-        { passive: false }
-    );
-
-    servoRightTrack.addEventListener(
-        "touchend",
-        (e) =>
-        {
-            for(const touch of e.changedTouches)
-            {
-                if(touch.identifier === servoRightTouchId)
-                {
-                    servoRightTouchId = null;
-                    break;
-                }
-            }
-        }
-    );
 
     // =========================
     // JOYSTICKS

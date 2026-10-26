@@ -1,8 +1,9 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="es">
 
 <head>
-    <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <meta charset="utf-8" />
 
     <link rel="stylesheet" type="text/css" href="./style.css">
@@ -14,85 +15,109 @@
 </head>
 
 <body>
-    <div id="topBar">
 
-        <button id="stopBtn">
-            STOP
-        </button>
+    <!-- Barra superior -->
+    <div id="topBar">
+        <button id="stopBtn" type="button">STOP</button>
 
         <div id="status" class="disconnected">
             <span class="dot"></span>
             <span class="label">Disconnected</span>
         </div>
 
-        <button id="enableBtn">
-            ENABLE
-        </button>
-
-        <button id="configBtn">⚙️</button>
-
-
-    </div>
-    
-    <div id="servoRow">
-
-        <div class="servoContainer">
-
-            <label>Servo Izq</label>
-
-
-            <div id="servoLeftTrack">
-                <div id="servoLeftKnob"></div>
-            </div>
-
-            <span id="servoLeftValue">90°</span>
-
-        </div>
-
-        <div class="servoContainer">
-
-            <label>Servo Der</label>
-
-            <div id="servoRightTrack">
-                <div id="servoRightKnob"></div>
-            </div>
-
-            <span id="servoRightValue">90°</span>
-
-        </div>
-
+        <button id="enableBtn" type="button">ENABLE</button>
+        <button id="configBtn" type="button" aria-label="Configuración">⚙</button>
     </div>
 
+    <!-- Control del único servo -->
+    <section id="servoRow">
+        <div class="servoContainer">
+            <div class="servoHeader">
+                <label for="servoSlider">Posición del servo</label>
+                <output id="servoValue" for="servoSlider">50%</output>
+            </div>
+
+            <input
+                type="range"
+                id="servoSlider"
+                min="0"
+                max="100"
+                value="50"
+                step="1"
+            />
+
+            <div class="sliderLabels">
+                <span>0</span>
+                <span>50</span>
+                <span>100</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Controles de los tres motores auxiliares -->
+    <section id="auxPanel">
+        <h3>Motores auxiliares</h3>
+
+        <div class="motorGrid">
+
+            <div class="motorCard">
+                <span class="motorTitle">Motor 1</span>
+                <div class="motorButtons">
+                    <button type="button" class="motorBtn ccw"
+                        data-motor="1" data-direction="-100">CCW</button>
+                    <button type="button" class="motorBtn cw"
+                        data-motor="1" data-direction="100">CW</button>
+                </div>
+            </div>
+
+            <div class="motorCard">
+                <span class="motorTitle">Motor 2</span>
+                <div class="motorButtons">
+                    <button type="button" class="motorBtn ccw"
+                        data-motor="2" data-direction="-100">CCW</button>
+                    <button type="button" class="motorBtn cw"
+                        data-motor="2" data-direction="100">CW</button>
+                </div>
+            </div>
+
+            <div class="motorCard">
+                <span class="motorTitle">Motor 3</span>
+                <div class="motorButtons">
+                    <button type="button" class="motorBtn ccw"
+                        data-motor="3" data-direction="-100">CCW</button>
+                    <button type="button" class="motorBtn cw"
+                        data-motor="3" data-direction="100">CW</button>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Joysticks de movimiento -->
     <div id="outerContainer">
-
         <div id="joyLeft"></div>
-
         <div id="joyRight"></div>
-
     </div>
 
+    <!-- Configuración -->
+    <div id="configPanel" class="hidden">
+        <h3>Configuración</h3>
 
-<div id="configPanel" class="hidden">
+        <label>
+            <input type="checkbox" id="invertForward">
+            Invertir adelante/atrás
+        </label>
 
-    <h3>Configuración</h3>
+        <label>
+            <input type="checkbox" id="invertStrafe">
+            Invertir izquierda/derecha
+        </label>
 
-    <label>
-        <input type="checkbox" id="invertForward">
-        Invertir Adelante/Atrás
-    </label>
-
-    <label>
-        <input type="checkbox" id="invertStrafe">
-        Invertir Izquierda/Derecha
-    </label>
-
-    <label>
-        <input type="checkbox" id="invertRotate">
-        Invertir Giro
-    </label>
-
-</div>
-
+        <label>
+            <input type="checkbox" id="invertRotate">
+            Invertir giro
+        </label>
+    </div>
 
 </body>
 </html>

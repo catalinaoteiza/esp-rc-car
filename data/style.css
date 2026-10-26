@@ -1,48 +1,48 @@
-body
-{
+
+* {
+    box-sizing: border-box;
+}
+
+body {
     margin: 0;
     background: #111;
     color: white;
     font-family: Arial, sans-serif;
+    overscroll-behavior: none;
 }
 
 /* =======================
-   TOP BAR (SISTEMA BASE)
+   BARRA SUPERIOR
 ======================= */
 #topBar {
     position: fixed;
     top: 10px;
     left: 10px;
     right: 10px;
-
     height: 56px;
 
     display: flex;
     align-items: center;
     justify-content: space-between;
-
     gap: 8px;
     z-index: 1000;
 }
 
-/* =======================
-   BOTONES PRINCIPALES
-======================= */
+#stopBtn,
+#enableBtn,
+#configBtn {
+    height: 100%;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: bold;
+    touch-action: manipulation;
+}
+
 #stopBtn,
 #enableBtn {
-    height: 100%;
     min-width: 90px;
-
     flex: 0 0 auto;
-
-    border-radius: 12px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border: none;
-    color: white;
 }
 
 #stopBtn {
@@ -53,33 +53,37 @@ body
     background: #1565c0;
 }
 
+#configBtn {
+    aspect-ratio: 1 / 1;
+    flex: 0 0 auto;
+    background: #333;
+    font-size: 20px;
+}
+
 /* =======================
-   STATUS
+   ESTADO DE CONEXIÓN
 ======================= */
 #status {
     height: 100%;
-    flex: 1;
-
     min-width: 80px;
+    flex: 1;
 
     display: flex;
     align-items: center;
     justify-content: center;
-
-    background: #333;
-    border-radius: 10px;
+    gap: 8px;
 
     padding: 0 10px;
-
-    gap: 8px;
+    background: #333;
+    border-radius: 10px;
 }
 
-/* LED */
 #status .dot {
     width: 12px;
     height: 12px;
+    flex: 0 0 auto;
     border-radius: 50%;
-    background: red;
+    background: #ff1744;
 }
 
 #status.connected .dot {
@@ -90,75 +94,201 @@ body
     background: #ff1744;
 }
 
-@media (max-width: 500px) {
-
-    #status {
-        min-width: 44px;
-        flex: 0 0 auto;
-        padding: 0 6px;
-    }
-
-    #status .label {
-        display: none;
-    }
-}
 
 /* =======================
-   CONFIG BUTTON (CUADRADO)
+   SERVO
 ======================= */
-#configBtn {
-    height: 100%;
-    aspect-ratio: 1 / 1;
-
-    flex: 0 0 auto;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 12px;
-}
-
-/* =======================
-   SERVO ROW
-======================= */
-#servoRow
-{
+#servoRow {
     position: fixed;
-    top: 75px;
+    top: 76px;
     left: 10px;
     right: 10px;
-
-    display: none;
-    justify-content: space-between;
-    gap: 15px;
-
-    z-index: 1000;
-}
-
-.servoContainer
-{
-    width: 42vw;
-    max-width: 240px;
-
-    background: #222;
-    padding: 10px;
-
-    border-radius: 12px;
+    z-index: 500;
 
     display: flex;
-    flex-direction: column;
+    justify-content: flex-start;
+    align-items: flex-start;
+
+    pointer-events: none;
+}
+
+.servoContainer {
+    width: min(360px, 100%);
+    padding: 10px 14px;
+
+    background: #222;
+    border: 1px solid #383838;
+    border-radius: 12px;
+
+    pointer-events: auto;
+}
+
+.servoHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+#servoValue {
+    color: #69f0ae;
+    font-weight: bold;
+}
+
+#servoSlider {
+    display: block;
+    width: 100%;
+    margin: 0;
+
+    accent-color: #00c853;
+    cursor: pointer;
+    touch-action: pan-y;
+}
+
+.sliderLabels {
+    display: flex;
+    justify-content: space-between;
+
+    margin-top: 4px;
+
+    color: #aaa;
+    font-size: 11px;
+}
+
+/* =======================
+   MOTORES AUXILIARES
+======================= */
+#auxPanel {
+    position: fixed;
+    top: 76px;
+    left: 390px;
+    right: 10px;
+    z-index: 400;
+
+    width: auto;
+    max-width: 760px;
+    margin: 0;
+    padding: 10px;
+
+    background: #191919;
+    border: 1px solid #333;
+    border-radius: 14px;
+}
+
+#auxPanel h3 {
+    margin: 0 0 10px;
+
+    color: #ddd;
+    font-size: 14px;
+    text-align: center;
+}
+
+.motorGrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
 }
+
+.motorCard {
+    min-width: 0;
+    padding: 8px 6px;
+
+    background: #252525;
+    border-radius: 10px;
+}
+
+.motorTitle {
+    display: block;
+    margin-bottom: 8px;
+
+    color: #fff;
+    font-size: 13px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.motorButtons {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.motorBtn {
+    width: 100%;
+    min-height: 32px;
+    padding: 6px 2px;
+
+    border: none;
+    border-radius: 7px;
+
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.motorBtn:active {
+    filter: brightness(1.3);
+    transform: scale(0.98);
+}
+
+.motorBtn.ccw {
+    background: #1565c0;
+}
+
+.motorBtn.cw {
+    background: #00897b;
+}
+
+
+/* =======================
+   PANTALLAS ESTRECHAS
+======================= */
+@media (max-width: 700px) {
+    #servoRow {
+        top: 76px;
+        left: 10px;
+        right: 10px;
+    }
+
+    .servoContainer {
+        width: 100%;
+        max-width: 360px;
+    }
+
+    #auxPanel {
+        top: 190px;
+        left: 10px;
+        right: 10px;
+
+        width: auto;
+        max-width: none;
+    }
+}
+
 
 /* =======================
    JOYSTICKS
 ======================= */
-#joyLeft,
-#joyRight
-{
+
+#outerContainer {
     position: fixed;
-    bottom: 20px;
+    inset: 0;
+    z-index: 100;
+    pointer-events: none;
+}
+
+#joyLeft,
+#joyRight {
+    position: fixed;
+    bottom: 16px;
 
     width: 28vmin;
     height: 28vmin;
@@ -170,74 +300,47 @@ body
     min-height: 110px;
 
     touch-action: none;
-    z-index: 100;
+    pointer-events: auto;
+    z-index: 200;
 }
 
-#joyLeft { left: 20px; }
-#joyRight { right: 20px; }
-
-@media (orientation: landscape) {
-    #joyLeft,
-    #joyRight {
-        width: 22vmin;
-        height: 22vmin;
-
-        bottom: 10px;
-    }
+#joyLeft {
+    left: 12px;
 }
+
+#joyRight {
+    right: 12px;
+}
+
 
 /* =======================
-   SERVO SLIDERS
-======================= */
-#servoLeftTrack,
-#servoRightTrack
-{
-    width: 140px;
-    height: 20px;
-
-    background: #444;
-    border-radius: 10px;
-
-    position: relative;
-
-    touch-action: none;
-}
-
-#servoLeftKnob,
-#servoRightKnob
-{
-    width: 24px;
-    height: 24px;
-
-    border-radius: 50%;
-    background: #00c853;
-
-    position: absolute;
-    top: -2px;
-    left: calc(50% - 12px);
-
-    touch-action: none;
-}
-
-/* =======================
-   CONFIG PANEL
+   CONFIGURACIÓN
 ======================= */
 #configPanel {
     position: fixed;
-    top: 60px;
+    top: 76px;
     right: 10px;
-
-    background: #222;
-    color: white;
-
-    padding: 15px;
-    border-radius: 10px;
-
-    z-index: 1000;
+    z-index: 1100;
 
     display: flex;
     flex-direction: column;
     gap: 10px;
+
+    max-width: calc(100vw - 20px);
+    padding: 15px;
+
+    background: #222;
+    color: white;
+    border: 1px solid #444;
+    border-radius: 10px;
+}
+
+#configPanel h3 {
+    margin: 0 0 4px;
+}
+
+#configPanel label {
+    font-size: 13px;
 }
 
 .hidden {
@@ -245,26 +348,191 @@ body
 }
 
 /* =======================
-   PORTRAIT MODE (MÓVIL)
+   MÓVIL EN VERTICAL
 ======================= */
 @media (orientation: portrait) {
-
     #topBar {
         height: 44px;
     }
 
     #stopBtn,
     #enableBtn {
-        min-width: 60px;
+        min-width: 58px;
         font-size: 12px;
     }
 
     #status {
-        min-width: 50px;
+        min-width: 40px;
         padding: 0 6px;
+    }
+
+    #status .label {
+        display: none;
     }
 
     #configBtn {
         font-size: 16px;
+    }
+
+    #servoRow {
+        top: 64px;
+    }
+
+    #auxPanel {
+        top: 150px;
+        padding: 8px 6px;
+    }
+
+    #auxPanel h3 {
+        font-size: 12px;
+        margin-bottom: 7px;
+    }
+
+    .motorGrid {
+        gap: 5px;
+    }
+
+    .motorCard {
+        padding: 7px 4px;
+    }
+
+    .motorTitle {
+        font-size: 12px;
+    }
+
+    .motorBtn {
+        min-height: 34px;
+        font-size: 11px;
+    }
+
+    #joyLeft,
+    #joyRight {
+        width: 28vmin;
+        height: 28vmin;
+        bottom: 16px;
+    }
+
+    #joyLeft {
+        left: 12px;
+    }
+
+    #joyRight {
+        right: 12px;
+    }
+}
+
+
+/* =======================
+   MÓVIL EN HORIZONTAL
+======================= */
+@media (orientation: landscape) {
+    #servoRow {
+        top: 76px;
+        left: 10px;
+        right: auto;
+        width: 250px;
+        transform: none;
+    }
+
+    #auxPanel {
+        top: 76px;
+        left: 275px;
+        right: 10px;
+        width: auto;
+        max-width: 520px;
+        transform: none;
+    }
+
+    #joyLeft,
+    #joyRight {
+        width: 22vmin;
+        height: 22vmin;
+        bottom: 10px;
+    }
+}
+
+/* Pantallas horizontales especialmente bajas */
+@media (orientation: landscape) and (max-height: 450px) {
+    #topBar {
+        height: 42px;
+    }
+
+    #servoRow {
+        top: 58px;
+        left: 10px;
+        right: auto;
+        width: 210px;
+        transform: none;
+    }
+
+    #auxPanel {
+        top: 58px;
+        left: 230px;
+        right: 10px;
+        width: auto;
+        max-width: 390px;
+        padding: 6px;
+        transform: none;
+    }
+
+    #auxPanel h3 {
+        margin-bottom: 5px;
+    }
+
+    .motorCard {
+        padding: 4px;
+    }
+
+    .motorTitle {
+        margin-bottom: 4px;
+    }
+
+    .motorButtons {
+        gap: 3px;
+    }
+
+    .motorBtn {
+        min-height: 26px;
+        padding: 3px 1px;
+        font-size: 10px;
+    }
+
+    .sliderLabels {
+        margin-top: 2px;
+    }
+
+    #joyLeft,
+    #joyRight {
+        width: 22vmin;
+        height: 22vmin;
+        min-width: 110px;
+        min-height: 110px;
+        max-width: 200px;
+        max-height: 200px;
+    }
+}
+
+
+
+
+@media (orientation: portrait) {
+    #auxPanel {
+        /* Deja libre la zona inferior de los joysticks. */
+        max-height: 36vh;
+        overflow-y: auto;
+    }
+
+    #joyLeft,
+    #joyRight {
+        bottom: 16px;
+        width: 27vmin;
+        height: 27vmin;
+    }
+}
+
+@media (orientation: landscape) {
+    #auxPanel {
+        max-height: 40vh;
+        overflow-y: auto;
     }
 }
