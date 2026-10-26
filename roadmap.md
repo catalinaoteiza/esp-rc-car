@@ -31,6 +31,7 @@ This roadmap outlines potential improvements for the ESP-based WiFi-controlled r
   - Centralize motor inversion and direction handling.
   - Validate forward, reverse, strafe, and rotation directions.
   - Add configurable speed limits and output clamping.
+  - Improve joy resize for small screens.
 
 - [ ] **Improve the control interface**
   - Fix joystick resizing and orientation changes on mobile devices.
