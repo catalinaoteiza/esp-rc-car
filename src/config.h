@@ -53,28 +53,35 @@ const int servoPin = D2; // Example only: conflicts with traction!
 #elif defined(ESP32)
 
 // Front Left
-const int pwm_FL = 25;
-const int dir_FL = 26;
+const int pwm_FL = 15;
+const int dir_FL = 2;
 
 // Front Right
-const int pwm_FR = 27;
-const int dir_FR = 32;
+const int pwm_FR = 0;
+const int dir_FR = 4;
 
 // Rear Left
-const int pwm_RL = 33;
-const int dir_RL = 13;
+const int pwm_RL = 16;
+const int dir_RL = 17;
 
 // Rear Right
-const int pwm_RR = 14;
-const int dir_RR = 4;
+const int pwm_RR = 5;
+const int dir_RR = 18;
 
-const int pwm_M1 = 16;
-const int dir_M1 = 17;
-const int pwm_M2 = 18;
-const int dir_M2 = 19;
-const int pwm_M3 = 21;
-const int dir_M3 = 22;
-const int servoPin = 23;
+// Auxiliary Motor 1
+const int pwm_M1 = 12;
+const int dir_M1 = 14;
+
+// Auxiliary Motor 2
+const int pwm_M2 = 22;
+const int dir_M2 = 23;
+
+// Auxiliary Motor 3
+const int pwm_M3 = 26;
+const int dir_M3 = 27;
+
+// Servo
+const int servoPin = 25;
 
 
 #else
