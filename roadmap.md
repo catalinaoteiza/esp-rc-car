@@ -4,6 +4,12 @@
 
 This roadmap outlines potential improvements for the ESP-based WiFi-controlled robot platform. The goal is to evolve the current web joystick interface into a reliable, modular, and extensible robotics control system.
 
+## Phase 0 — Additional controls
+
+- [ ] **For the competition**
+  - Add aux systems controls: servo and DC.
+  - Add UI for second and third controller.
+
 ## Phase 1 — Core Stability and Reliability
 
 **Goal:** Make the existing control system predictable, safe, and easy to maintain.
@@ -13,6 +19,7 @@ This roadmap outlines potential improvements for the ESP-based WiFi-controlled r
   - Automatically reconnect after connection loss.
   - Stop all motors when the connection is lost.
   - Display connection errors and reconnection status.
+  - Validate for a complete message no missing fields
 
 - [ ] **Implement a control watchdog**
   - Stop the motors if control packets are not received within a configurable timeout.
