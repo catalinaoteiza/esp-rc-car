@@ -19,7 +19,20 @@ using namespace websockets;
 WebsocketsServer server;
 AsyncWebServer webserver(80);
 
-WebsocketsClient client;
+// ============================================================
+// MULTI-CLIENT WEBSOCKET
+// ============================================================
+const uint8_t MAX_WS_CLIENTS = 4;
+
+WebsocketsClient clients[MAX_WS_CLIENTS];
+bool clientConnected[MAX_WS_CLIENTS] = { false };
+String clientRole[MAX_WS_CLIENTS] = { "", "", "" };
+
+const char* allowedRoles[] = {
+    "drive",
+    "servo",
+    "aux"
+};
 
 
 // ============================================================
@@ -334,6 +347,176 @@ void printFilesystemInfo()
 #endif
 }
 
+void stopRole(const String& role) {
+    if (role == "conductor") {
+        driveMecanum(0, 0, 0);
+    }
+    else if (role == "auxiliar") {
+        setMotor1(0);
+        setMotor2(0);
+        setMotor3(0);
+    }
+    // El servo conserva su última posición.
+}
+
+bool roleIsTaken(const String& role, int exceptSlot = -1) {
+    for (uint8_t i = 0; i < MAX_WS_CLIENTS; i++) {
+        if (i != exceptSlot &&
+            clientConnected[i] &&
+            clientRole[i] == role) {
+            return true;
+        }
+    }
+    return false;
+}
+
+ 
+// ============================================================
+// WebSocket message handler
+// Expected format:
+// 
+// ============================================================
+void handleClientMessage(uint8_t slot, WebsocketsMessage msg) {
+    String data = msg.data();
+
+    // Exigir asignación de rol antes de aceptar comandos.
+    if (clientRole[slot].isEmpty()) {
+        if (!data.startsWith("ROLE,")) {
+            clients[slot].send("ROLE_REQUIRED");
+            return;
+        }
+
+        String role = data.substring(5);
+
+        if (role != "conductor" &&
+            role != "servo" &&
+            role != "auxiliar") {
+            clients[slot].send("ROLE_DENIED");
+            return;
+        }
+
+        if (roleIsTaken(role, slot)) {
+            clients[slot].send("ROLE_BUSY");
+            return;
+        }
+
+        clientRole[slot] = role;
+        clients[slot].send("ROLE_OK," + role);
+
+        Serial.printf("Cliente %u asignado: %s\n",
+                      slot, role.c_str());
+        return;
+    }
+
+    // Conductor: DRIVE,adelante,lateral,giro
+    if (clientRole[slot] == "conductor") {
+        if (!data.startsWith("DRIVE,")) return;
+
+        int p1 = data.indexOf(',');
+        int p2 = data.indexOf(',', p1 + 1);
+        int p3 = data.indexOf(',', p2 + 1);
+
+        if (p1 < 0 || p2 < 0 || p3 < 0) return;
+
+        int forward = data.substring(p1 + 1, p2).toInt();
+        int strafe  = data.substring(p2 + 1, p3).toInt();
+        int rotate  = data.substring(p3 + 1).toInt();
+
+        driveMecanum(
+            constrain(forward, -100, 100),
+            constrain(strafe, -100, 100),
+            constrain(rotate, -100, 100)
+        );
+    }
+
+    // Servo: SERVO,posicion
+    else if (clientRole[slot] == "servo") {
+        if (!data.startsWith("SERVO,")) return;
+
+        int position = data.substring(6).toInt();
+        setServoPosition(constrain(position, 0, 180));
+    }
+
+    // Auxiliar: AUX,motor,velocidad
+    else if (clientRole[slot] == "auxiliar") {
+        if (!data.startsWith("AUX,")) return;
+
+        int comma = data.indexOf(',', 4);
+        if (comma < 0) return;
+
+        int motor = data.substring(4, comma).toInt();
+        int speed = constrain(data.substring(comma + 1).toInt(),
+                              -100, 100);
+
+        switch (motor) {
+            case 1: setMotor1(speed); break;
+            case 2: setMotor2(speed); break;
+            case 3: setMotor3(speed); break;
+            default: return;
+        }
+    }
+}
+
+
+
+
+
+ 
+void acceptWebSocketClients() {
+    if (!server.poll()) return;
+
+    WebsocketsClient newClient = server.accept();
+
+    if (!newClient.available()) return;
+
+    int slot = -1;
+
+    for (uint8_t i = 0; i < MAX_WS_CLIENTS; i++) {
+        if (!clientConnected[i]) {
+            slot = i;
+            break;
+        }
+    }
+
+    if (slot < 0) {
+        newClient.close();
+        Serial.println("WS: capacidad completa");
+        return;
+    }
+
+    clients[slot] = newClient;
+    clientConnected[slot] = true;
+    clientRole[slot] = "";
+
+    clients[slot].onMessage([slot](WebsocketsMessage msg) {
+        handleClientMessage(slot, msg);
+    });
+
+    Serial.printf("WS: cliente conectado en slot %d\n", slot);
+}
+
+void serviceWebSocketClients() {
+    for (uint8_t i = 0; i < MAX_WS_CLIENTS; i++) {
+        if (!clientConnected[i]) continue;
+
+        if (clients[i].available()) {
+            clients[i].poll();
+        }
+
+        if (clientConnected[i] && !clients[i].available()) {
+            String role = clientRole[i];
+
+            Serial.printf("WS: desconectado slot %d, rol %s\n",
+                          i, role.c_str());
+
+            // Detener el subsistema antes de liberar el slot.
+            stopRole(role);
+
+            clientRole[i] = "";
+            clientConnected[i] = false;
+        }
+    }
+}
 
 void setup()
 {
@@ -408,7 +591,7 @@ void setup()
     String ssid = String(ssid_base) + chipHex;
 
     // Create AP
-    WiFi.softAP(ssid, password);
+    WiFi.softAP(ssid, password, 1, false, 4);
     IPAddress IP = WiFi.softAPIP();
     Serial.println("Wifi Name: " + ssid);
     Serial.println("Password: " + String(password) );
@@ -476,91 +659,14 @@ void setup()
     }
  
 }
- 
-// ============================================================
-// WebSocket message handler
-// Expected format:
-// forward,strafe,rotate,motor1,motor2,motor3,servoPosition
-// ============================================================
-
-void handle_message(WebsocketsMessage msg)
-{
-    String data = msg.data();
-
-    // Locate the six separators required for seven values.
-    int p[6];
-
-    int start = 0;
-
-    for (int i = 0; i < 6; i++)
-    {
-        p[i] = data.indexOf(',', start);
-
-        // Reject malformed or incomplete messages.
-        if (p[i] < 0)
-            return;
-
-        start = p[i] + 1;
-    }
-
-    // Parse the three drive commands.
-    forward = data.substring(0, p[0]).toInt();
-    strafe  = data.substring(p[0] + 1, p[1]).toInt();
-    rotate  = data.substring(p[1] + 1, p[2]).toInt();
-
-    // Parse the three auxiliary DC motor commands.
-    motor1 = data.substring(p[2] + 1, p[3]).toInt();
-    motor2 = data.substring(p[3] + 1, p[4]).toInt();
-    motor3 = data.substring(p[4] + 1, p[5]).toInt();
-
-    // Parse the auxiliary servo position.
-    servoPosition = data.substring(p[5] + 1).toInt();
-
-    // Apply the drive commands.
-    driveMecanum(
-        constrain(forward, -100, 100),
-        constrain(strafe, -100, 100),
-        constrain(rotate, -100, 100)
-    );
-
-    // Apply the auxiliary motor commands.
-    setMotor1(motor1);
-    setMotor2(motor2);
-    setMotor3(motor3);
-
-    // Apply the servo command.
-    setServoPosition(servoPosition);
-
-    // Print the received commands for debugging.
-    Serial.printf(
-        "F:%d S:%d R:%d | M1:%d M2:%d M3:%d | SV:%d\n",
-        forward, strafe, rotate,
-        motor1, motor2, motor3,
-        servoPosition
-    );
-}
-
 
 
 void loop()
 {
     ArduinoOTA.handle();
 
-    if (!client.available())
-    {
-        client = server.accept();
-
-        if (client.available())
-        {
-            client.onMessage(handle_message);
-            Serial.println("WS client connected");
-        }
-    }
-
-    if (client.available())
-    {
-        client.poll();
-    }
+    acceptWebSocketClients();
+    serviceWebSocketClients();
 
     yield();
 }

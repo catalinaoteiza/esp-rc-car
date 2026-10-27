@@ -3,14 +3,28 @@
     box-sizing: border-box;
 }
 
+ 
+
+html,
 body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+
+body {
+    height: 100vh;
+    height: 100dvh;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-sizing: border-box;
     margin: 0;
     background: #111;
     color: white;
     font-family: Arial, sans-serif;
     overscroll-behavior: none;
 }
-
 /* =======================
    BARRA SUPERIOR
 ======================= */
@@ -94,6 +108,10 @@ body {
     background: #ff1744;
 }
 
+
+[hidden] {
+    display: none !important;
+}
 
 /* =======================
    SERVO
@@ -417,13 +435,18 @@ body {
     }
 }
 
-
-@media (max-width: 329px) {
+@media (orientation: portrait) and (max-width: 330px) {
     #status .label {
         display: none;
     }
 }
 
+
+@media (orientation: landscape) and (max-width: 400px) {
+    #status .label {
+        display: none;
+    }
+}
 /* =======================
    MÓVIL EN HORIZONTAL
 ======================= */
@@ -537,4 +560,46 @@ body {
         max-height: 40vh;
         overflow-y: auto;
     }
+}
+
+
+
+.appAlert[hidden] {
+  display: none !important;
+}
+
+.appAlert {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.appAlertCard {
+  width: 100%;
+  max-width: 360px;
+  padding: 20px;
+  border-radius: 12px;
+  background: #fff;
+  color: #222;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+
+.appAlertCard h3 {
+  margin-top: 0;
+}
+
+.appAlertCard p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.appAlertCard button {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 12px;
 }

@@ -1,40 +1,225 @@
-var loc = window.location;
-var WS_URL = (loc.protocol === "https:" ? "wss://" : "ws://") + window.location.hostname + ":82";
-var ws = new WebSocket(WS_URL);
+// =====================================================
+// WEBSOCKET + ROLE MANAGEMENT
+// =====================================================
 
-var lastText, lastSend, sendTimeout;
-// limit sending to one message every 30 ms
-// https://github.com/neonious/lowjs_esp32_examples/blob/master/neonious_one/cellphone_controlled_rc_car/www/index.html
-function send(txt)
-{
-    var now = Date.now();
+const loc = window.location;
+const WS_URL =
+    (loc.protocol === "https:" ? "wss://" : "ws://") +
+    loc.hostname + ":82";
 
-    if (lastSend === undefined || now - lastSend >= 30)
-    {
-        if (ws && ws.readyState === WebSocket.OPEN)
-        {
-            ws.send(txt);
-            lastSend = Date.now();
+// Seleccionar rol mediante la URL:
+// ?role=conductor
+// ?role=servo
+// ?role=auxiliar
+
+const validRoles = ["conductor", "servo", "auxiliar"];
+const params = new URLSearchParams(window.location.search);
+
+let role = params.get("role") || "conductor";
+
+if (!validRoles.includes(role)) {
+    role = "conductor";
+}
+
+// =====================================================
+// CONTROL STATE
+// =====================================================
+
+let enabled = false;
+let roleTimeout = null;
+let ws = null;
+let roleGranted = false;
+let reconnectTimer = null;
+let lastSend = 0;
+
+const SEND_INTERVAL = 30;
+
+// =====================================================
+// ROLE-BASED INTERFACE
+// =====================================================
+function applyRoleInterface() {
+    const roleConfig = {
+        conductor: {
+            show: ["#outerContainer", "#configBtn"],
+            title: "Conductor"
+        },
+        servo: {
+            show: ["#servoRow"],
+            title: "Control de servo"
+        },
+        auxiliar: {
+            show: ["#auxPanel"],
+            title: "Motores auxiliares"
+        }
+    };
+
+    const config = roleConfig[role] || roleConfig.conductor;
+
+    // Ocultar los controles de todos los roles.
+    ["#servoRow", "#auxPanel", "#outerContainer", "#configBtn"]
+        .forEach(selector => {
+            document.querySelectorAll(selector).forEach(element => {
+                element.hidden = true;
+            });
+        });
+
+    // Mostrar solo los controles del rol seleccionado.
+    config.show.forEach(selector => {
+        document.querySelectorAll(selector).forEach(element => {
+            element.hidden = false;
+        });
+    });
+
+    // La configuración usa solamente la clase CSS .hidden.
+    const configPanel = document.getElementById("configPanel");
+    configPanel.hidden = false;
+    configPanel.classList.add("hidden");
+
+    document.title = `${config.title} | Mecanum Robot Control`;
+}
+
+
+function connectWebSocket() {
+    if (ws && (
+        ws.readyState === WebSocket.OPEN ||
+        ws.readyState === WebSocket.CONNECTING
+    )) {
+        return;
+    }
+
+    ws = new WebSocket(WS_URL);
+
+    ws.onopen = () => {
+        roleGranted = false;
+        updateConnectionStatus(true);
+
+        console.log("[WS] Connected. Requesting role:", role);
+
+        // El servidor debe responder ROLE_OK,rol o ROLE_BUSY.
+        ws.send("ROLE," + role);
+    };
+
+
+    ws.onmessage = event => {
+        const message = String(event.data).trim();
+        console.log("[WS] Received:", message);
+        showAppAlert("Msg from ESP32", message);
+
+        if (message === "ROLE_OK," + role) {
+            clearTimeout(roleTimeout);
+            roleGranted = true;
+
+            lastDrivePacket = "";
+            lastServoPacket = "";
+            lastAuxPackets = ["", "", ""];
+
+            updateEnableButton();
+            setStatus(`Conectado · ${role}`, "connected");
+
+            console.log("[WS] Role granted:", role);
+
+            if (role === "conductor") {
+                sendNow("DRIVE,0,0,0");
+            } else if (role === "auxiliar") {
+                sendNow("AUX,1,0");
+                sendNow("AUX,2,0");
+                sendNow("AUX,3,0");
+            }
+
             return;
         }
-    }
 
-    lastText = txt;
+        if (message === "ROLE_BUSY" || message === "ROLE_DENIED") {
+            clearTimeout(roleTimeout);
+            roleGranted = false;
+            enabled = false;
+            updateEnableButton();
 
-    if (!sendTimeout)
-    {
-        var ms = lastSend !== undefined ? 30 - (now - lastSend) : 30;
+            setStatus("Conectado · rol rechazado", "connecting");
 
-        if (ms < 0)
-            ms = 0;
+            console.warn("[WS] Role unavailable:", message);
 
-        sendTimeout = setTimeout(() =>
-        {
-            sendTimeout = null;
-            send(lastText);
-        }, ms);
-    }
+            showAppAlert(
+                "Rol no disponible",
+                message === "ROLE_BUSY"
+                    ? `El rol "${role}" ya está ocupado por otro usuario.`
+                    : `El ESP32 ha rechazado el rol "${role}".`
+            );
+            return;
+        }
+
+        if (message === "ROLE_REQUIRED") {
+            clearTimeout(roleTimeout);
+            roleGranted = false;
+            enabled = false;
+            updateEnableButton();
+
+            setStatus("Conectado · falta autorización", "connecting");
+
+            console.warn("[WS] Role assignment required");
+
+            showAppAlert(
+                "Autorización requerida",
+                "El ESP32 solicita que se asigne el rol antes de aceptar comandos."
+            );
+            return;
+        }
+
+        // Conserva aquí cualquier otro procesamiento de mensajes
+        // que tu implementación anterior pudiera necesitar.
+    };
+
+
+    ws.onclose = () => {
+        roleGranted = false;
+        enabled = false;
+
+        updateConnectionStatus(false);
+        updateEnableButton();
+
+        console.log("[WS] Disconnected");
+
+        clearTimeout(reconnectTimer);
+        reconnectTimer = setTimeout(connectWebSocket, 1500);
+    };
+
+    ws.onerror = error => {
+        console.error("[WS] Error:", error);
+        updateConnectionStatus(false);
+    };
 }
+
+// Envío inmediato: para asignación de rol y STOP.
+function sendNow(message) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(message);
+        lastSend = Date.now();
+        return true;
+    }
+
+    return false;
+}
+
+// Envío limitado: para los controles periódicos.
+function send(message) {
+    const now = Date.now();
+    const elapsed = now - lastSend;
+
+    if (!ws || ws.readyState !== WebSocket.OPEN || !roleGranted) {
+        return false;
+    }
+
+    if (elapsed < SEND_INTERVAL) {
+        return false;
+    }
+
+    ws.send(message);
+    lastSend = now;
+    return true;
+}
+
+connectWebSocket();
+
 
 let JoyLeft;
 let JoyRight;
@@ -99,7 +284,7 @@ document.querySelectorAll(".motorBtn").forEach(button => {
     button.addEventListener("pointerdown", event => {
         event.preventDefault();
 
-        if (!enabled) return;
+        if (!enabled || !roleGranted || role !== "auxiliar") return;
 
         setAuxMotor(motor, direction);
 
@@ -131,8 +316,8 @@ const servoSlider = document.getElementById("servoSlider");
 const servoValue = document.getElementById("servoValue");
 
 servoSlider.addEventListener("input", () => {
-    if (!enabled) {
-        console.log("[UI] Servo ignorado: sistema deshabilitado");
+    if (!enabled || !roleGranted || role !== "servo") {
+        console.log("[UI] Servo ignorado: rol no autorizado o sistema deshabilitado");
         return;
     }
 
@@ -144,16 +329,6 @@ servoSlider.addEventListener("input", () => {
 auxServoPosition = Number(servoSlider.value);
 servoValue.textContent = `${auxServoPosition}%`;
 
-/* =======================
-   STOP GLOBAL
-======================= */
-
-// Añadir el evento sin reemplazar el manejador STOP existente.
-document.getElementById("stopBtn").addEventListener("click", () => {
-    setAuxMotor(1, 0);
-    setAuxMotor(2, 0);
-    setAuxMotor(3, 0);
-});
 
 
   
@@ -172,12 +347,13 @@ document.getElementById("stopBtn").addEventListener("click", () => {
     }
 
 
-function getControlData()
-{
-    // Si los joysticks no están disponibles, detener los motores.
-    if (!JoyLeft || !JoyRight)
-    {
-        return "0,0,0,0,0,0,50";
+function getControlData() {
+    if (role !== "conductor") {
+        return null;
+    }
+
+    if (!JoyLeft || !JoyRight || !enabled) {
+        return "DRIVE,0,0,0";
     }
 
     let leftX  = Number(JoyLeft.GetX());
@@ -185,179 +361,308 @@ function getControlData()
     let rightX = Number(JoyRight.GetX());
     let rightY = Number(JoyRight.GetY());
 
-    // Priorizar el eje dominante para evitar movimientos diagonales.
+    // Priorizar el eje dominante.
     if (Math.abs(leftY) > Math.abs(leftX) * 2) leftX = 0;
     if (Math.abs(leftX) > Math.abs(leftY) * 2) leftY = 0;
     if (Math.abs(rightY) > Math.abs(rightX) * 2) rightX = 0;
     if (Math.abs(rightX) > Math.abs(rightY) * 2) rightY = 0;
 
-    // Joystick izquierdo: avance y desplazamiento lateral.
     let forward = deadzone(leftY);
     let strafe  = deadzone(-leftX);
+    let rotate  = deadzone(-rightX);
 
-    // Joystick derecho: rotación.
-    let rotate = deadzone(-rightX);
-
-    // Los motores auxiliares se controlan desde la interfaz.
-    let motor1 = Number(auxMotor1);
-    let motor2 = Number(auxMotor2);
-    let motor3 = Number(auxMotor3);
-
-    // Posición del único servo: rango de 0 a 100.
-    let servoPosition = Number(auxServoPosition);
-
-    // Aplicar inversiones de los controles principales.
     if (invertForward) forward = -forward;
     if (invertStrafe)  strafe  = -strafe;
     if (invertRotate)  rotate  = -rotate;
 
-    // Deshabilitar el movimiento detiene todos los motores.
-    if (!enabled)
-    {
-        forward = 0;
-        strafe  = 0;
-        rotate  = 0;
-        motor1  = 0;
-        motor2  = 0;
-        motor3  = 0;
-    }
-
-
-
-    // Limitar las velocidades de los motores al rango -100 a 100.
     forward = Math.max(-100, Math.min(100, Math.round(forward)));
     strafe  = Math.max(-100, Math.min(100, Math.round(strafe)));
     rotate  = Math.max(-100, Math.min(100, Math.round(rotate)));
 
-    motor1 = Math.max(-100, Math.min(100, Math.round(motor1)));
-    motor2 = Math.max(-100, Math.min(100, Math.round(motor2)));
-    motor3 = Math.max(-100, Math.min(100, Math.round(motor3)));
-
-    // Validar la posición del servo.
-    if (!Number.isFinite(servoPosition)) servoPosition = 50;
-    servoPosition = Math.max(0, Math.min(100, Math.round(servoPosition)));
-
-    // Protocolo: avance, lateral, rotación, motor1, motor2, motor3, servo.
-    return [
-        forward,
-        strafe,
-        rotate,
-        motor1,
-        motor2,
-        motor3,
-        servoPosition
-    ].join(",");
+    return `DRIVE,${forward},${strafe},${rotate}`;
 }
 
-
 // =====================================================
-// CONFIGURATION PANEL
-// =====================================================
-
-document
-    .getElementById("configBtn")
-    .onclick = () =>
-    {
-        document
-            .getElementById("configPanel")
-            .classList
-            .toggle("hidden");
-    };
-
-
-// =====================================================
-// PERIODIC TRANSMISSION
+// PERIODIC TRANSMISSION BY ROLE
 // =====================================================
 
-let lastPacket = "";
+let lastDrivePacket = "";
+let lastServoPacket = "";
+let lastAuxPackets = ["", "", ""];
 
-setInterval(() =>
-{
-    const packet = getControlData();
+setInterval(() => {
+    if (!roleGranted || !enabled) {
+        return;
+    }
 
-    if (packet !== lastPacket)
-    {
-        console.log(packet);
-        send(packet);
+    // ---------------------------------
+    // CONDUCTOR
+    // ---------------------------------
+    if (role === "conductor") {
+        const packet = getControlData();
 
-        lastPacket = packet;
+        if (packet && packet !== lastDrivePacket) {
+            if (send(packet)) {
+                lastDrivePacket = packet;
+                console.log("[TX][DRIVE]", packet);
+            }
+        }
+    }
+
+    // ---------------------------------
+    // SERVO
+    // ---------------------------------
+    else if (role === "servo") {
+        const position = Math.max(
+            0,
+            Math.min(100, Math.round(Number(auxServoPosition) || 0))
+        );
+
+        const packet = `SERVO,${position}`;
+
+        if (packet !== lastServoPacket) {
+            if (send(packet)) {
+                lastServoPacket = packet;
+                console.log("[TX][SERVO]", packet);
+            }
+        }
+    }
+
+    // ---------------------------------
+    // AUXILIAR
+    // ---------------------------------
+    else if (role === "auxiliar") {
+        const values = [auxMotor1, auxMotor2, auxMotor3];
+
+        for (let i = 0; i < 3; i++) {
+            const motor = i + 1;
+            const speed = Math.max(
+                -100,
+                Math.min(100, Math.round(Number(values[i]) || 0))
+            );
+
+            const packet = `AUX,${motor},${speed}`;
+
+            if (packet !== lastAuxPackets[i]) {
+                if (send(packet)) {
+                    lastAuxPackets[i] = packet;
+                    console.log("[TX][AUX]", packet);
+                }
+            }
+        }
     }
 }, 50);
+ 
 
+function stopCurrentRole() {
+    if (!roleGranted || !ws || ws.readyState !== WebSocket.OPEN) {
+        console.warn("[UI] STOP local: conexión o rol no disponible");
+        return;
+    }
 
-document.addEventListener(
-    "touchmove",
-    function(e)
-    {
-        if (
-            e.target.closest("#joyLeft") ||
-            e.target.closest("#joyRight")
-        )
-        {
-            e.preventDefault();
-        }
-    },
-    { passive: false }
-);
+    if (role === "conductor") {
+        sendNow("DRIVE,0,0,0");
+        lastDrivePacket = "DRIVE,0,0,0";
+    }
 
-let enabled = false;
+    else if (role === "auxiliar") {
+        setAuxMotor(1, 0);
+        setAuxMotor(2, 0);
+        setAuxMotor(3, 0);
 
-// =====================================================
-// BUTTONS
-// =====================================================
+        sendNow("AUX,1,0");
+        sendNow("AUX,2,0");
+        sendNow("AUX,3,0");
 
-function updateEnableButton()
-{
-    document.getElementById("enableBtn").textContent =
-        enabled
-        ? "DISABLE"
-        : "ENABLE";
+        lastAuxPackets = [
+            "AUX,1,0",
+            "AUX,2,0",
+            "AUX,3,0"
+        ];
+    }
+
+    // El servo mantiene su última posición.
 }
 
-document
-.getElementById("enableBtn")
-.onclick = () =>
-{
+/* =====================================================
+   BUTTONS: ENABLE / STOP / CONFIG
+   ===================================================== */
+
+
+function updateEnableButton() {
+    const button = document.getElementById("enableBtn");
+
+    button.disabled = false;
+    button.textContent = enabled ? "DISABLE" : "ENABLE";
+
+    console.log("[ENABLE] UI actualizada:", {
+        enabled,
+        roleGranted,
+        disabled: button.disabled,
+        text: button.textContent
+    });
+}
+
+
+
+document.getElementById("enableBtn").addEventListener("click", () => {
+    showAppAlert(
+        "Diagnóstico ENABLE",
+        `Botón pulsado.\n\n` +
+        `Rol: ${role}\n` +
+        `Rol autorizado: ${roleGranted}\n` +
+        `Estado enabled: ${enabled}\n` +
+        `WebSocket: ${ws ? ws.readyState : "no inicializado"}`
+    );
+
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        showAppAlert(
+            "Backend desconectado",
+            "El WebSocket no está conectado al ESP32."
+        );
+        return;
+    }
+
+    if (!roleGranted) {
+        showAppAlert(
+            "Rol no autorizado",
+            `Se recibió una pulsación, pero roleGranted es ${roleGranted}.`
+        );
+        return;
+    }
+
     enabled = !enabled;
     updateEnableButton();
-    console.log(`[UI] ${enabled ? "ENABLE" : "DISABLE"}`);
-};
+
+    showAppAlert(
+        enabled ? "Control habilitado" : "Control deshabilitado",
+        `Nuevo estado: ${enabled}\nRol: ${role}`
+    );
+
+    console.log("[ENABLE] Nuevo estado:", enabled);
+
+    if (!enabled) {
+        stopCurrentRole();
+    }
+});
 
 
-document
-.getElementById("stopBtn")
-.onclick = () =>
-{
+
+
+document.getElementById("stopBtn").addEventListener("click", () => {
+    console.warn("[UI] STOP solicitado");
+
     enabled = false;
+    stopCurrentRole();
 
-    servoLeftPos = 90;
-    servoRightPos = 90;
-    console.log("[UI] Stop button");
-    send("0,0,0,90,90");
+    updateEnableButton();
+    console.log("[UI] STOP ejecutado");
+});
+
+
+
+
+/* =====================================================
+   CONFIGURATION PANEL
+   ===================================================== */
+
+document.getElementById("configBtn").addEventListener("click", () => {
+    const panel = document.getElementById("configPanel");
+
+    if (!panel) return;
+
+    panel.classList.toggle("hidden");
+    console.log(
+        "[UI] Configuración:",
+        panel.classList.contains("hidden") ? "oculta" : "visible"
+    );
+});
+
+/* =====================================================
+   fullscreenBtn 
+   ===================================================== */
+
+
+const fullscreenToggle = document.getElementById("fullscreenToggle");
+
+fullscreenToggle.addEventListener("change", async () => {
+    try {
+        if (fullscreenToggle.checked) {
+            await document.documentElement.requestFullscreen();
+        } else if (document.fullscreenElement) {
+            await document.exitFullscreen();
+        }
+    } catch (error) {
+        fullscreenToggle.checked = !!document.fullscreenElement;
+
+        showAppAlert(
+            "Pantalla completa",
+            `No se pudo cambiar el modo de pantalla completa.\n\n${error.name}: ${error.message}`
+        );
+    }
+});
+
+document.addEventListener("fullscreenchange", () => {
+    fullscreenToggle.checked = !!document.fullscreenElement;
+});
+
+
+
+ // =====================================================
+ // WEBSOCKET EVENTS
+ // =====================================================
+
+ws.onopen = () => {
+  console.log("[WS] Connected:", WS_URL);
+  updateConnectionStatus(true);
+
+  setStatus("Conectado · autorizando rol…", "connecting");
+
+  // Solicitar autorización al ESP32
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(`ROLE,${role}`);
+    console.log("[WS] Role requested:", role);
+  }
+
+  clearTimeout(roleTimeout);
+  roleTimeout = setTimeout(() => {
+    if (!roleGranted) {
+      console.warn("[WS] Role authorization timeout:", role);
+      setStatus("Conectado · sin autorización", "connecting");
+
+      showAppAlert(
+        "Sin autorización",
+        `El WebSocket está conectado, pero no se recibió ROLE_OK,${role} en 5 segundos.\n\nComprueba que el firmware del ESP32 admite este rol y responde con el formato esperado.`
+      );
+    }
+  }, 5000);
 };
 
-// =====================================================
-// WEBSOCKET EVENTS
-// =====================================================
+ws.onerror = (event) => {
+  console.error("[WS] Connection error:", WS_URL, event);
+  updateConnectionStatus(false);
+  setStatus("Error de conexión", "disconnected");
 
-
-ws.onopen = () =>
-{
-    updateConnectionStatus(true);
-    console.log("WebSocket conectado");
+  showAppAlert(
+    "Error de conexión",
+    `No se pudo establecer la comunicación con el ESP32.\n\nDirección: ${WS_URL}`
+  );
 };
 
-ws.onclose = () =>
-{
-    updateConnectionStatus(false);
-    console.log("WebSocket cerrado");
+ws.onclose = (event) => {
+  console.warn("[WS] Connection closed:", event.code, event.reason);
+
+  clearTimeout(roleTimeout);
+  roleGranted = false;
+  enabled = false;
+
+  updateEnableButton();
+  updateConnectionStatus(false);
+  setStatus("Desconectado", "disconnected");
 };
 
-ws.onerror = (e) =>
-{
-    updateConnectionStatus(false);
-    console.log("WebSocket error", e);
-};
+
+
 
 
 function updateConnectionStatus(connected)
@@ -374,6 +679,10 @@ function updateConnectionStatus(connected)
         status.classList.add("disconnected");
         label.textContent = "Disconnected";
     }
+
+    if (roleGranted) {
+        setStatus(`Conectado · ${role}`, "connected");
+    }
 }
 
 
@@ -383,6 +692,8 @@ function updateConnectionStatus(connected)
 
 window.addEventListener("load", () =>
 {
+    applyRoleInterface();
+
     document.getElementById("invertForward").onchange = (e) =>
     {
         invertForward = e.target.checked;
@@ -411,8 +722,13 @@ window.addEventListener("load", () =>
 });
 
 
-function createJoysticks()
-{
+function createJoysticks() {
+    if (role !== "conductor") {
+        JoyLeft = null;
+        JoyRight = null;
+        return;
+    }
+
     const left = document.getElementById("joyLeft");
     const right = document.getElementById("joyRight");
 
@@ -421,14 +737,10 @@ function createJoysticks()
 
     JoyLeft = new JoyStick("joyLeft", {});
 
-    JoyRight = new JoyStick(
-        "joyRight",
-        {
-            title: "joystick2"
-        }
-    );
+    JoyRight = new JoyStick("joyRight", {
+        title: "joystick2"
+    });
 }
-
 
 let resizeTimer;
 
@@ -443,3 +755,29 @@ window.addEventListener("resize", () =>
     }, 200);
 });
 
+
+// Alerts
+
+function showAppAlert(title, message) {
+  document.getElementById("appAlertTitle").textContent = title;
+  document.getElementById("appAlertMessage").textContent = message;
+  document.getElementById("appAlert").hidden = false;
+}
+
+document.getElementById("appAlertClose").addEventListener("click", () => {
+  document.getElementById("appAlert").hidden = true;
+});
+
+function setStatus(message, state = "disconnected") {
+  const status = document.getElementById("status");
+  const label = status.querySelector(".label");
+
+  label.textContent = message;
+  status.classList.remove("connected", "disconnected", "connecting");
+  status.classList.add(state);
+}
+
+function refreshEnableButton() {
+  const button = document.getElementById("enableBtn");
+  button.textContent = enabled ? "DISABLE" : "ENABLE";
+}
