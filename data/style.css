@@ -366,10 +366,6 @@ body {
         padding: 0 6px;
     }
 
-    #status .label {
-        display: none;
-    }
-
     #configBtn {
         font-size: 16px;
     }
@@ -421,6 +417,12 @@ body {
     }
 }
 
+
+@media (max-width: 329px) {
+    #status .label {
+        display: none;
+    }
+}
 
 /* =======================
    MÓVIL EN HORIZONTAL
